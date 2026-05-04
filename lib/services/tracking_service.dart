@@ -82,6 +82,21 @@ class TrackingService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 标记情绪到最近一个轨迹点
+  void tagEmotion(String emoji, String label) {
+    if (_points.isNotEmpty) {
+      final last = _points.last;
+      _points[_points.length - 1] = TrackPoint(
+        latitude: last.latitude,
+        longitude: last.longitude,
+        timestamp: last.timestamp,
+        speed: last.speed,
+        emotionEmoji: emoji,
+        emotionLabel: label,
+      );
+    }
+  }
+
   @override
   void dispose() {
     _simTimer?.cancel();
@@ -95,11 +110,15 @@ class TrackPoint {
   final double longitude;
   final DateTime timestamp;
   final double speed;
+  final String? emotionEmoji;
+  final String? emotionLabel;
 
   const TrackPoint({
     required this.latitude,
     required this.longitude,
     required this.timestamp,
     required this.speed,
+    this.emotionEmoji,
+    this.emotionLabel,
   });
 }

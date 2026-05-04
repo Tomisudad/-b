@@ -1,8 +1,30 @@
+import 'package:flutter/foundation.dart';
 import '../models/scenario.dart';
 
 class VoiceService {
   static final VoiceService instance = VoiceService._();
   VoiceService._();
+
+  String _lastTip = '';
+  int _lastKm = 0;
+
+  /// 播报语音（Web端模拟）
+  void speak(String msg) {
+    // Flutter Web TTS placeholder
+    debugPrint('[Voice] $msg');
+  }
+
+  /// 每骑行1km轮播一次提示
+  void cycleTip(OutdoorScenario scenario, int km) {
+    if (km > _lastKm) {
+      _lastKm = km;
+      final tip = getRandomTip(scenario);
+      if (tip.isNotEmpty && tip != _lastTip) {
+        _lastTip = tip;
+        speak(tip);
+      }
+    }
+  }
 
   Map<OutdoorScenario, List<String>> tips = {
     OutdoorScenario.cycle: [
