@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../config/scenario_config.dart';
-import '../providers/scenario_provider.dart';
-import '../providers/auth_provider.dart';
-import '../providers/checklist_provider.dart';
-import '../providers/trip_provider.dart';
+import '../models/route_model.dart';
+import '../models/scenario.dart';
 import 'route_library_page.dart';
-import 'offline_maps_page.dart';
 import 'checklist_page.dart';
 import 'departure_page.dart';
-import 'navigation_page.dart';
-import 'search_page.dart';
 
-// ============================================================
-// 首页 V2.0 — 出发前决策与准备面板
-// 无地图/无指南针/无SOS/无广告/无内容推荐
-// ============================================================
+/// V4.0 首页 — 出发前决策与准备面板 + 热门路线发现
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -25,154 +16,119 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  // ===== 场景下拉 =====
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  OutdoorScenario _scene = OutdoorScenario.cycle;
+  bool _sceneDropdownOpen = false;
   final LayerLink _sceneLayer = LayerLink();
   OverlayEntry? _sceneOverlay;
-  bool _sceneOpen = false;
 
-  // ===== 统计数据（从 provider 真实读取） =====
-  int _routeCount = 0;
-  String _latestRouteName = '';
-  double _latestDistance = 0;
-  int _offlineRegions = 0;
+  late AnimationController _btnAnimCtrl;
 
-  // ===== 装备 =====
-  int _checkedItems = 0;
-  int _totalItems = 0;
-  List<String> _missingItems = [];
-  double _equipProgress = 0;
+  // ===== Mock 天气 =====
+  String _weatherIcon = '☀️';
+  int _temperature = 24;
+  int _windLevel = 2;
 
-  // ===== 旅行建议条件 =====
-  bool _hasRainWarning = false;
-  bool _equipIncomplete = false;
-  bool _offlineMissing = false;
-
-  // ===== 出行计划 =====
-  String? _plannedDate;
-  String? _plannedRouteName;
-
-  // ===== 补给数据 =====
-  int _supplyCount = 0;
-  String _supplyLabel = '';
+  // ===== Mock 热门路线 =====
+  late List<_HotRoute> _hotRoutes;
 
   @override
   void initState() {
     super.initState();
-    _refresh();
+    _btnAnimCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
+    _genHotRoutes();
   }
 
-  void _refresh() {
-    final trip = context.read<TripProvider>();
-    final routes = trip.completedTrips;
-    _routeCount = routes.length;
-
-    if (routes.isNotEmpty) {
-      _latestRouteName = routes.last.name;
-      _latestDistance = routes.last.totalDistanceKm;
-    } else {
-      _latestRouteName = '';
-      _latestDistance = 0;
-    }
-
-    _offlineRegions = 3; // mock
-
-    // 装备
-    final chk = context.read<ChecklistProvider>();
-    _totalItems = chk.totalItems;
-    _checkedItems = chk.checkedItems;
-    _missingItems = chk.missingItems.take(3).toList();
-    _equipProgress = _totalItems > 0 ? _checkedItems / _totalItems : 0;
-    _equipIncomplete = _missingItems.isNotEmpty;
-
-    // 旅行建议条件
-    _hasRainWarning = _checkRainWarning();
-    _offlineMissing = _offlineRegions == 0;
+  @override
+  void dispose() {
+    _btnAnimCtrl.dispose();
+    _removeOverlay();
+    super.dispose();
   }
 
-  bool _checkRainWarning() {
-    // mock: 模拟后天有雨
-    return true;
-  }
-
-  // ==================== 场景下拉 ====================
-  void _toggleSceneOverlay() {
-    if (_sceneOpen) {
-      _closeSceneOverlay();
-      return;
-    }
-    _sceneOpen = true;
-    _sceneOverlay = _createSceneOverlay();
-    Overlay.of(context).insert(_sceneOverlay!);
-  }
-
-  void _closeSceneOverlay() {
+  void _removeOverlay() {
     _sceneOverlay?.remove();
     _sceneOverlay = null;
-    _sceneOpen = false;
+    _sceneDropdownOpen = false;
   }
 
-  OverlayEntry _createSceneOverlay() {
-    final prov = context.read<ScenarioProvider>();
-    final current = prov.scenario;
+  // ===== 场景切换 =====
+  void _toggleScenePopup() {
+    if (_sceneDropdownOpen) {
+      _removeOverlay();
+      return;
+    }
+    _showScenePopup();
+  }
 
-    return OverlayEntry(builder: (ctx) {
-      return Stack(
-        children: [
-          GestureDetector(
-            onTap: () {
-              _closeSceneOverlay();
-              setState(() {});
-            },
-            behavior: HitTestBehavior.translucent,
-            child: Container(color: Colors.transparent),
-          ),
-          Positioned(
-            width: 180,
-            child: CompositedTransformFollower(
-              link: _sceneLayer,
-              showWhenUnlinked: false,
-              offset: const Offset(0, 48),
+  void _showScenePopup() {
+    _removeOverlay();
+
+    final overlay = Overlay.of(context);
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final offset = renderBox.localToGlobal(Offset.zero);
+    const items = [
+      ('🚴 骑行', OutdoorScenario.cycle, AppConfig.cyclePrimary),
+      ('🏍️ 摩旅', OutdoorScenario.moto, AppConfig.motoPrimary),
+      ('🚙 自驾', OutdoorScenario.drive, AppConfig.drivePrimary),
+    ];
+
+    _sceneOverlay = OverlayEntry(
+      builder: (ctx) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _removeOverlay(),
+        child: Stack(
+          children: [
+            Positioned(
+              left: offset.dx,
+              top: offset.dy + renderBox.size.height + 4,
               child: Material(
                 elevation: 8,
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+                shadowColor: Colors.black.withOpacity(0.08),
                 child: Container(
+                  width: 150,
                   decoration: BoxDecoration(
                     color: AppConfig.cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: AppConfig.cardShadow,
+                    borderRadius: BorderRadius.circular(AppConfig.cardRadius),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: OutdoorScenario.values.map((s) {
-                      final cfg = ScenarioConfig.of(s);
-                      final isActive = s == current;
-                      return GestureDetector(
+                    children: items.map((item) {
+                      final isSelected = _scene == item.$2;
+                      return InkWell(
                         onTap: () {
-                          prov.scenario = s;
-                          _closeSceneOverlay();
-                          setState(() => _refresh());
+                          setState(() => _scene = item.$2);
+                          _genHotRoutes();
+                          _removeOverlay();
                         },
                         child: Container(
                           height: AppConfig.sceneDropItemH,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: isActive ? cfg.primaryColor.withOpacity(0.08) : null,
-                            borderRadius: BorderRadius.circular(12),
+                            border: Border(
+                              left: BorderSide(
+                                color: isSelected ? item.$3 : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Text(s.emoji, style: const TextStyle(fontSize: 18)),
-                              const SizedBox(width: 10),
-                              Text(cfg.label, style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                                color: isActive ? cfg.primaryColor : AppConfig.textPrimary,
-                              )),
-                              const Spacer(),
-                              if (isActive)
-                                Icon(Icons.check, size: 18, color: cfg.primaryColor),
+                              Expanded(
+                                child: Text(
+                                  item.$1,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                    color: isSelected ? item.$3 : AppConfig.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.check, size: 16, color: item.$3),
                             ],
                           ),
                         ),
@@ -182,125 +138,108 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ),
-        ],
-      );
-    });
-  }
-
-  // ==================== Build ====================
-  @override
-  Widget build(BuildContext context) {
-    final scenario = context.watch<ScenarioProvider>().scenario;
-    final cfg = ScenarioConfig.of(scenario);
-    final auth = context.watch<AuthProvider>();
-    final isLogged = auth.isLoggedIn;
-
-    // 补给按场景适配
-    switch (scenario) {
-      case OutdoorScenario.cycle:
-        _supplyCount = 8;
-        _supplyLabel = '补水点3 · 维修点2 · 餐饮3';
-        break;
-      case OutdoorScenario.moto:
-        _supplyCount = 12;
-        _supplyLabel = '加油站5 · 维修点3 · 摩旅驿站4';
-        break;
-      case OutdoorScenario.drive:
-        _supplyCount = 15;
-        _supplyLabel = '停车场5 · 营地5 · 充电桩5';
-    }
-
-    // 出行计划 mock
-    _plannedDate = null;
-    _plannedRouteName = null;
-
-    return Scaffold(
-      backgroundColor: AppConfig.bgMain,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(cfg),
-            Expanded(
-              child: Stack(
-                children: [
-                  // 滚动内容
-                  SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(
-                      AppConfig.pageMargin, AppConfig.pageMargin,
-                      AppConfig.pageMargin, AppConfig.primaryBtnH + 32,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ===== 3.2 用户数据快览 =====
-                        _buildUserSnapshot(cfg.primaryColor, isLogged, auth),
-                        const SizedBox(height: AppConfig.cardGap),
-
-                        // ===== 3.3 出行建议 =====
-                        _buildTravelSuggestion(cfg.primaryColor),
-                        const SizedBox(height: AppConfig.sectionGap),
-
-                        // ===== 3.4 规划区 =====
-                        _sectionGoldBar('📋 规划'),
-                        const SizedBox(height: AppConfig.cardGap),
-
-                        _routePlanCard(cfg),
-                        const SizedBox(height: AppConfig.cardGap),
-                        _travelGuideCard(cfg),
-                        const SizedBox(height: AppConfig.cardGap),
-                        _offlineMapCard(cfg),
-
-                        // ===== 3.5 准备区 =====
-                        const SizedBox(height: AppConfig.sectionGap),
-                        _sectionGoldBar('✅ 准备'),
-                        const SizedBox(height: AppConfig.cardGap),
-
-                        _equipmentCard(cfg.primaryColor),
-                        const SizedBox(height: AppConfig.cardGap),
-                        _weatherSection(cfg.primaryColor),
-
-                        // ===== 3.6 增补卡片 =====
-                        const SizedBox(height: AppConfig.sectionGap),
-                        _supplyCard(cfg),
-                        const SizedBox(height: AppConfig.cardGap),
-                        _travelPlanCard(cfg),
-                        const SizedBox(height: AppConfig.cardGap),
-                        _seeOthersCard(cfg.primaryColor),
-
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-
-                  // ===== 3.7 固定在底部的出发行程按钮 =====
-                  Positioned(
-                    left: AppConfig.pageMargin,
-                    right: AppConfig.pageMargin,
-                    bottom: 8,
-                    child: _departButton(cfg),
-                  ),
-
-                  // ===== 3.8 快速开始 FAB =====
-                  if (isLogged && _routeCount > 0)
-                    Positioned(
-                      right: AppConfig.pageMargin,
-                      bottom: AppConfig.primaryBtnH + 16,
-                      child: _quickStartFab(cfg.primaryColor),
-                    ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
     );
+
+    overlay.insert(_sceneOverlay!);
+    setState(() => _sceneDropdownOpen = true);
   }
 
-  // ==================== 3.1 顶部操作栏 ====================
-  Widget _buildTopBar(ScenarioConfig cfg) {
-    final scenario = context.watch<ScenarioProvider>().scenario;
+  // ===== 热门路线数据 =====
+  void _genHotRoutes() {
+    final routes = <_HotRoute>[];
+    switch (_scene) {
+      case OutdoorScenario.cycle:
+        routes.addAll([
+          _HotRoute('洱海环湖骑行', 1243, 5832, 42.0, 320, '2h30min', 1),
+          _HotRoute('独库公路骑行段', 987, 4102, 58.0, 1200, '4h', 3),
+          _HotRoute('太湖东山半岛', 756, 3201, 28.0, 150, '1h30min', 1),
+          _HotRoute('千岛湖绿道全程', 1532, 7200, 68.0, 580, '3h30min', 2),
+          _HotRoute('青海湖环湖', 2100, 9800, 360.0, 2800, '3天', 4),
+        ]);
+        break;
+      case OutdoorScenario.moto:
+        routes.addAll([
+          _HotRoute('皖南川藏线', 1867, 8500, 120.0, 2200, '4h', 3),
+          _HotRoute('川西大环线', 3200, 15200, 680.0, 5200, '5天', 4),
+          _HotRoute('太行天路', 1543, 7100, 95.0, 1800, '3h', 2),
+          _HotRoute('G318川藏线', 5600, 28500, 2100.0, 12000, '12天', 5),
+          _HotRoute('秦岭分水岭', 892, 3900, 55.0, 1500, '2h', 2),
+        ]);
+        break;
+      case OutdoorScenario.drive:
+        routes.addAll([
+          _HotRoute('独库公路全程', 4500, 21000, 561.0, 3800, '2天', 3),
+          _HotRoute('G219新藏线', 3800, 18000, 2100.0, 8800, '10天', 5),
+          _HotRoute('川西小环线', 2800, 13500, 320.0, 2400, '2天', 2),
+          _HotRoute('青海甘肃大环线', 5200, 25000, 1800.0, 6500, '8天', 4),
+          _HotRoute('桂林阳朔山水', 1600, 7200, 85.0, 400, '3h', 1),
+        ]);
+        break;
+    }
+    _hotRoutes = routes;
+  }
+
+  Color get _primaryColor {
+    switch (_scene) {
+      case OutdoorScenario.cycle: return AppConfig.cyclePrimary;
+      case OutdoorScenario.moto: return AppConfig.motoPrimary;
+      case OutdoorScenario.drive: return AppConfig.drivePrimary;
+    }
+  }
+
+  String get _sceneLabel {
+    switch (_scene) {
+      case OutdoorScenario.cycle: return '骑行';
+      case OutdoorScenario.moto: return '摩旅';
+      case OutdoorScenario.drive: return '自驾';
+    }
+  }
+
+  String get _sceneEmoji {
+    switch (_scene) {
+      case OutdoorScenario.cycle: return '🚴';
+      case OutdoorScenario.moto: return '🏍️';
+      case OutdoorScenario.drive: return '🚙';
+    }
+  }
+
+  // ============================================================
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Column(
+      children: [
+        // ===== 顶部栏：场景切换 + 天气 =====
+        _buildTopBar(),
+        // ===== 可滚动内容区 =====
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: AppConfig.bottomNavHeight + bottomPadding + 24),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                // ===== 品牌标识 =====
+                _buildBrand(),
+                const SizedBox(height: AppConfig.sectionGap),
+                // ===== 功能入口 =====
+                _buildFunctionArea(),
+                const SizedBox(height: AppConfig.sectionGap),
+                // ===== 热门路线 =====
+                _buildHotRoutes(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== 顶部栏 ====================
+  Widget _buildTopBar() {
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
@@ -314,174 +253,40 @@ class _HomePageState extends State<HomePage> {
           CompositedTransformTarget(
             link: _sceneLayer,
             child: GestureDetector(
-              onTap: () {
-                _toggleSceneOverlay();
-                setState(() {});
-              },
+              onTap: _toggleScenePopup,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(scenario.emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 6),
-                  Text(cfg.label, style: TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w600,
-                    color: cfg.primaryColor,
-                  )),
-                  const SizedBox(width: 2),
-                  Icon(Icons.arrow_drop_down, size: 20, color: cfg.primaryColor),
+                  Text('$_sceneEmoji $_sceneLabel', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _sceneDropdownOpen ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppConfig.textSecondary),
+                  ),
                 ],
               ),
             ),
           ),
           const Spacer(),
-          // 搜索
+          // 天气快览
           GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => const SearchPage(),
-            )),
-            child: const Icon(Icons.search, size: 22, color: AppConfig.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==================== 3.2 用户数据快览 ====================
-  Widget _buildUserSnapshot(Color primaryColor, bool isLogged, AuthProvider auth) {
-    if (!isLogged) {
-      return GestureDetector(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('登录功能开发中')),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDeco(),
-          child: Row(
-            children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.08),
-                  shape: BoxShape.circle,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _WeatherPage())),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_weatherIcon, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Text(
+                  '${_temperature}°',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary),
                 ),
-                child: Icon(Icons.person_outline, size: 24, color: primaryColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '点击登录，开启你的出行记录',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: primaryColor),
+                const SizedBox(width: 4),
+                Text(
+                  '$_windLevel级风',
+                  style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary),
                 ),
-              ),
-              const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final trips = context.watch<TripProvider>();
-    double totalKm = 0;
-    double totalClimb = 0;
-    for (final t in trips.completedTrips) {
-      totalKm += t.totalDistanceKm;
-    }
-    // mock climb & districts
-    totalClimb = totalKm * 0.022;
-
-    return GestureDetector(
-      onTap: () {
-        // 切换到"我的"Tab 由外部控制，这里简单 snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('前往个人中心')),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: primaryColor.withOpacity(0.12),
-              child: Text(auth.user.nickname.isNotEmpty ? auth.user.nickname[0] : '?',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryColor),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(auth.user.nickname.isNotEmpty ? auth.user.nickname : '探险者', style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                  )),
-                  const SizedBox(height: 4),
-                  Text(
-                    '累计 ${totalKm.toStringAsFixed(0)}km · 爬升 ${totalClimb.toStringAsFixed(0)}km · 点亮 ${(_routeCount ~/ 3)}区县',
-                    style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_rankLabel(totalKm)} · ${_medalCount(totalKm)}枚勋章',
-                    style: TextStyle(fontSize: 12, color: primaryColor.withOpacity(0.8)),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _rankLabel(double km) {
-    if (km > 5000) return '征服者(金)';
-    if (km > 2000) return '探险家(银)';
-    if (km > 500) return '探险者(银)';
-    return '新手(铜)';
-  }
-
-  int _medalCount(double km) {
-    if (km > 5000) return 8;
-    if (km > 2000) return 5;
-    if (km > 500) return 3;
-    return 1;
-  }
-
-  // ==================== 3.3 出行建议 ====================
-  Widget _buildTravelSuggestion(Color primaryColor) {
-    String text;
-    Color textColor;
-
-    if (_hasRainWarning) {
-      text = '后天有雨，建议今天或明天出发';
-      textColor = AppConfig.sosRed;
-    } else if (_equipIncomplete) {
-      text = '核心装备未完成，出发前请检查';
-      textColor = AppConfig.motoPrimary;
-    } else if (_offlineMissing) {
-      text = '建议下载离线地图，无网络也能导航';
-      textColor = AppConfig.motoPrimary;
-    } else {
-      text = '条件良好，适合出发 ✅';
-      textColor = primaryColor;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDeco(),
-      child: Row(
-        children: [
-          Text('💡', style: TextStyle(fontSize: 20)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textColor),
+              ],
             ),
           ),
         ],
@@ -489,664 +294,357 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ==================== 3.4 规划 - 路线规划 ====================
-  Widget _routePlanCard(ScenarioConfig cfg) {
-    if (_routeCount == 0) {
-      return _emptyPlanCard(
-        icon: Icons.route_outlined,
-        color: cfg.primaryColor,
-        title: '路线规划',
-        illustration: '🗺️',
-        hint: '还没有自己的路线',
-        lines: const ['在地图上打点创建路线', '导入 GPX 文件', '从历史轨迹快速生成'],
-        buttonLabel: '开始创建',
-        onTap: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => const DeparturePage(),
-        )),
-      );
-    }
-
-    return _filledPlanCard(
-      icon: Icons.route_outlined,
-      color: cfg.primaryColor,
-      title: '路线规划',
-      summary: '$_routeCount条路线',
-      detail: _latestRouteName.isNotEmpty ? '$_latestRouteName · ${_latestDistance.toStringAsFixed(0)}km' : '查看所有路线',
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => const RouteLibraryPage(),
-      )),
+  // ==================== 品牌标识 ====================
+  Widget _buildBrand() {
+    return Column(
+      children: [
+        Text(
+          AppConfig.appName,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppConfig.textPrimary, letterSpacing: 2),
+        ),
+        const SizedBox(height: 4),
+        const Text('出行决策', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)),
+      ],
     );
   }
 
-  // ==================== 3.4 规划 - 出行攻略 ====================
-  Widget _travelGuideCard(ScenarioConfig cfg) {
-    // mock: 无攻略
-    return _emptyPlanCard(
-      icon: Icons.menu_book_outlined,
-      color: cfg.primaryColor,
-      title: '出行攻略',
-      illustration: '📒',
-      hint: '添加衣食住行攻略',
-      lines: const ['记录沿途美食、住宿、路况', '关联路线，出行时随时查看'],
-      buttonLabel: '添加攻略',
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('出行攻略模块开发中')),
-        );
-      },
-    );
-  }
-
-  // ==================== 3.4 规划 - 离线地图 ====================
-  Widget _offlineMapCard(ScenarioConfig cfg) {
-    if (_offlineRegions > 0) {
-      return _filledPlanCard(
-        icon: Icons.cloud_download_outlined,
-        color: cfg.primaryColor,
-        title: '离线地图',
-        summary: '$_offlineRegions个区域可用',
-        detail: '管理已下载区域',
-        onTap: () => Navigator.push(context, MaterialPageRoute(
-          builder: (_) => const OfflineMapsPage(),
-        )),
-      );
-    }
-
-    return _emptyPlanCard(
-      icon: Icons.cloud_download_outlined,
-      color: cfg.primaryColor,
-      title: '离线地图',
-      illustration: '📥',
-      hint: '暂无离线地图',
-      lines: const ['下载离线地图后，无网络也能导航', '节省流量，户外更安心'],
-      buttonLabel: '去下载',
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => const OfflineMapsPage(),
-      )),
-    );
-  }
-
-  // ==================== 3.5 准备 - 装备卡片 ====================
-  Widget _equipmentCard(Color primaryColor) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => const ChecklistPage(),
-      )),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.checklist_outlined, size: 22, color: primaryColor),
-                const SizedBox(width: 8),
-                const Text('装备检查', style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                )),
-                const Spacer(),
-                const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // 进度条
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: _equipProgress,
-                backgroundColor: const Color(0xFFEDEDED),
-                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                minHeight: 6,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            Text(
-              '核心装备 ${_checkedItems}/${_totalItems} (${(_equipProgress * 100).toStringAsFixed(0)}%)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: primaryColor),
-            ),
-
-            if (_missingItems.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, size: 14, color: AppConfig.sosRed),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      '未完成：${_missingItems.join('、')}${_missingItems.length < (context.read<ChecklistProvider>().missingItems.length) ? ' 等${context.read<ChecklistProvider>().missingItems.length}项' : ''}',
-                      style: const TextStyle(fontSize: 12, color: AppConfig.sosRed),
-                      maxLines: 2, overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.5 准备 - 天气卡片 ====================
-  Widget _weatherSection(Color primaryColor) {
-    final days = [
-      _WDay('今天', '☀️', '28°', '微风 2级', false),
-      _WDay('明天', '⛅', '24°', '西北 3级', false),
-      _WDay('后天', '🌧️', '18°', '东北 4级', _hasRainWarning),
-    ];
-
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('天气详情开发中')),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.wb_sunny_outlined, size: 20, color: primaryColor),
-                const SizedBox(width: 8),
-                const Text('📍 杭州', style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                )),
-                const Spacer(),
-                const Text('查看详细预报 →', style: TextStyle(
-                  fontSize: 12, color: AppConfig.textSecondary,
-                )),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: days.map((d) {
-                return Expanded(
-                  child: Column(
-                    children: [
-                      Text(d.label, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-                      const SizedBox(height: 4),
-                      Text(d.emoji, style: TextStyle(fontSize: 26)),
-                      const SizedBox(height: 4),
-                      Text(d.temp, style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                      )),
-                      const SizedBox(height: 2),
-                      Text(d.wind, style: TextStyle(
-                        fontSize: 11,
-                        color: d.warning ? AppConfig.sosRed : AppConfig.textSecondary,
-                      ), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      if (d.warning) ...[
-                        const SizedBox(height: 2),
-                        Text('⚠️ 大雨', style: const TextStyle(
-                          fontSize: 10, color: AppConfig.sosRed, fontWeight: FontWeight.w500,
-                        )),
-                      ],
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.6 沿途补给卡片 ====================
-  Widget _supplyCard(ScenarioConfig cfg) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('补给分布页开发中')),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: cfg.primaryColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.local_gas_station_outlined, size: 24, color: cfg.primaryColor),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('沿途补给', style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                  )),
-                  const SizedBox(height: 4),
-                  Text(_supplyLabel, style: const TextStyle(
-                    fontSize: 13, color: AppConfig.textSecondary,
-                  )),
-                ],
-              ),
-            ),
-            Text('$_supplyCount个', style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w500, color: cfg.primaryColor,
-            )),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.6 出行计划卡片 ====================
-  Widget _travelPlanCard(ScenarioConfig cfg) {
-    if (_plannedDate != null && _plannedRouteName != null) {
-      return GestureDetector(
-        onTap: () {},
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDeco(),
-          child: Row(
-            children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: cfg.primaryColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.calendar_today_outlined, size: 22, color: cfg.primaryColor),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('出行计划', style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                    )),
-                    const SizedBox(height: 4),
-                    Text('$_plannedRouteName · $_plannedDate', style: const TextStyle(
-                      fontSize: 13, color: AppConfig.textSecondary,
-                    )),
-                    const SizedBox(height: 2),
-                    Text('${_latestDistance.toStringAsFixed(0)}km · 预估${(_latestDistance / 80).ceil()}天', style: const TextStyle(
-                      fontSize: 12, color: AppConfig.textSecondary,
-                    )),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_latestRouteName.isNotEmpty) {
-      return GestureDetector(
-        onTap: () {},
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: _cardDeco(),
-          child: Row(
-            children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: cfg.primaryColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.calendar_today_outlined, size: 22, color: cfg.primaryColor),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('出行计划', style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                    )),
-                    const SizedBox(height: 4),
-                    Text('$_latestRouteName', style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.textPrimary,
-                    )),
-                    const SizedBox(height: 2),
-                    Text('暂未设置出发日期', style: const TextStyle(
-                      fontSize: 12, color: AppConfig.textSecondary,
-                    )),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: cfg.primaryColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.calendar_today_outlined, size: 22, color: cfg.primaryColor),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('出行计划', style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                  )),
-                  SizedBox(height: 4),
-                  Text('还没有出行计划，去规划一条路线吧', style: TextStyle(
-                    fontSize: 13, color: AppConfig.textSecondary,
-                  )),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.6 看看别人怎么走 ====================
-  Widget _seeOthersCard(Color primaryColor) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => const RouteLibraryPage(),
-      )),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
-          children: [
-            Text('👀', style: TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('看看别人怎么走', style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                  )),
-                  const SizedBox(height: 4),
-                  Text('浏览公开路线，获取灵感', style: const TextStyle(
-                    fontSize: 13, color: AppConfig.textSecondary,
-                  )),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: primaryColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text('去看看', style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor,
-              )),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.7 出发行程按钮（固定） ====================
-  Widget _departButton(ScenarioConfig cfg) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => const DeparturePage(),
-        ));
-      },
-      child: Container(
-        width: double.infinity,
-        height: AppConfig.primaryBtnH,
-        decoration: BoxDecoration(
-          gradient: goldGradient,
-          borderRadius: BorderRadius.circular(AppConfig.buttonRadius),
-          boxShadow: [
-            BoxShadow(
-              color: AppConfig.goldStart.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text('出发行程', style: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textInverse,
-          )),
-        ),
-      ),
-    );
-  }
-
-  // ==================== 3.8 快速开始 FAB ====================
-  Widget _quickStartFab(Color primaryColor) {
-    return GestureDetector(
-      onTap: () {
-        final scenario = context.read<ScenarioProvider>().scenario;
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => NavigationPage(scenario: scenario),
-        ));
-      },
-      child: Container(
-        width: 52, height: 52,
-        decoration: BoxDecoration(
-          color: primaryColor,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withOpacity(0.35),
-              blurRadius: 12, offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text('⚡', style: TextStyle(fontSize: 24, color: AppConfig.textInverse)),
-        ),
-      ),
-    );
-  }
-
-  // ==================== Helpers ====================
-
-  BoxDecoration _cardDeco() {
-    return BoxDecoration(
-      color: AppConfig.cardBg,
-      borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-      boxShadow: AppConfig.cardShadow,
-    );
-  }
-
-  /// Section 金色竖条
-  Widget _sectionGoldBar(String text) {
+  // ==================== 功能入口（三图标） ====================
+  Widget _buildFunctionArea() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Row(
         children: [
-          Container(
-            width: 4, height: 20,
-            decoration: BoxDecoration(
-              color: AppConfig.goldEnd,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(text, style: const TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary,
-          )),
+          _buildFuncIcon('路线规划', Icons.route_outlined, AppConfig.cyclePrimary, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage()));
+          }),
+          _buildFuncIcon('轨迹记录', Icons.timeline_outlined, AppConfig.drivePrimary, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
+          }),
+          _buildFuncIcon('装备清单', Icons.checklist_outlined, AppConfig.motoPrimary, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ChecklistPage()));
+          }),
         ],
       ),
     );
   }
 
-  // --- 规划卡片（空状态） ---
-  Widget _emptyPlanCard({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String illustration,
-    required String hint,
-    required List<String> lines,
-    required String buttonLabel,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
+  Widget _buildFuncIcon(String label, IconData icon, Color color, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // 左图标区
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                  )),
-                  const SizedBox(height: 6),
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(illustration, style: TextStyle(fontSize: 28)),
-                        const SizedBox(height: 6),
-                        Text(hint, style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.textPrimary,
-                        )),
-                        const SizedBox(height: 4),
-                        ...lines.map((l) => Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(l, style: const TextStyle(
-                            fontSize: 12, color: AppConfig.textSecondary,
-                          )),
-                        )),
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: onTap,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(buttonLabel, style: TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600, color: color,
-                            )),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
+            Icon(icon, size: AppConfig.cardIconSize, color: color),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
           ],
         ),
       ),
     );
   }
 
-  // --- 规划卡片（已填充） ---
-  Widget _filledPlanCard({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String summary,
-    required String detail,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: _cardDeco(),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
+  // ==================== 热门路线 ====================
+  Widget _buildHotRoutes() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 分隔符
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+          child: Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(width: 20, height: 1, color: AppConfig.textSecondary.withOpacity(0.3)),
+                    const SizedBox(width: 8),
+                    const Text('热门路线', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Container(height: 1, color: AppConfig.textSecondary.withOpacity(0.15))),
+                  ],
+                ),
               ),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage())),
+                child: Text(
+                  '查看全部 >',
+                  style: TextStyle(fontSize: 12, color: AppConfig.textSecondary.withOpacity(0.5)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 路线卡片列表
+        ..._hotRoutes.asMap().entries.map((e) {
+          final route = e.value;
+          final isLast = e.key == _hotRoutes.length - 1;
+          return _buildRouteCard(route, isLast: isLast);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRouteCard(_HotRoute route, {bool isLast = false}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, isLast ? 0 : AppConfig.cardGap),
+      child: Material(
+        color: AppConfig.cardBg,
+        borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+          onTap: () {
+            // 转为 RouteModel 并跳转详情
+            final model = RouteModel(
+              id: 'hot_${route.name.hashCode}',
+              name: route.name,
+              scenario: _scene,
+              difficulty: route.difficulty,
+              distanceKm: route.distanceKm,
+              durationMinutes: route.durationMinutes,
+              totalClimb: route.climb,
+            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => _RouteDetailStub(route: model)));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
-                      )),
-                      const Spacer(),
-                      const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
+                      // 路线名称
+                      Text(route.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+                      const SizedBox(height: 6),
+                      // 点赞 + 走过人数
+                      Row(
+                        children: [
+                          const Icon(Icons.thumb_up_outlined, size: 13, color: AppConfig.textSecondary),
+                          const SizedBox(width: 3),
+                          Text('${route.likes}', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.directions_walk, size: 13, color: AppConfig.textSecondary),
+                          const SizedBox(width: 3),
+                          Text('${route.walkers}人走过', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // 距离·爬升·用时
+                      Text(
+                        '${route.distanceKm.toStringAsFixed(1)}km · ↑${route.climb}m · ${route.duration}',
+                        style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(summary, style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.textPrimary,
-                  )),
-                  const SizedBox(height: 2),
-                  Text(detail, style: const TextStyle(
-                    fontSize: 12, color: AppConfig.textSecondary,
-                  ), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                // 难度标签
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _difficultyLabel(route.difficulty),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: _primaryColor),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // ==================== 导航方法（供外部组件使用） ====================
-  void goToDeparture() {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => const DeparturePage(),
-    ));
+  String _difficultyLabel(int d) {
+    switch (d) {
+      case 1: return '新手';
+      case 2: return '入门';
+      case 3: return '进阶';
+      case 4: return '困难';
+      case 5: return '资深';
+      default: return '未知';
+    }
   }
 }
 
-// ===== 天气日数据 =====
-class _WDay {
-  final String label, emoji, temp, wind;
-  final bool warning;
-  const _WDay(this.label, this.emoji, this.temp, this.wind, this.warning);
+// ============================================================
+// 热门路线数据类
+// ============================================================
+class _HotRoute {
+  final String name;
+  final int likes;
+  final int walkers;
+  final double distanceKm;
+  final int climb;
+  final String duration;
+  final int difficulty;
+
+  const _HotRoute(this.name, this.likes, this.walkers, this.distanceKm, this.climb, this.duration, this.difficulty);
+
+  int get durationMinutes {
+    if (duration.endsWith('天')) {
+      final d = int.tryParse(duration.replaceAll('天', '')) ?? 1;
+      return d * 24 * 60;
+    }
+    if (duration.endsWith('min')) {
+      return int.tryParse(duration.replaceAll('min', '')) ?? 60;
+    }
+    // format: 'Xh' or 'XhYmin'
+    final parts = duration.split('h');
+    final h = int.tryParse(parts[0]) ?? 1;
+    final m = parts.length > 1 ? (int.tryParse(parts[1].replaceAll('min', '')) ?? 0) : 0;
+    return h * 60 + m;
+  }
+}
+
+// ============================================================
+// 天气详情页（Stub）
+// ============================================================
+class _WeatherPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('天气详情')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppConfig.pageMargin),
+        children: [
+          _weatherCard('今天', '☀️', 24, 15, '晴', 2),
+          const SizedBox(height: 12),
+          _weatherCard('明天', '⛅', 22, 14, '多云', 3),
+          const SizedBox(height: 12),
+          _weatherCard('后天', '🌧️', 18, 12, '小雨', 4),
+          const SizedBox(height: AppConfig.sectionGap),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppConfig.sosRed.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+              border: Border.all(color: AppConfig.sosRed.withOpacity(0.2)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: AppConfig.sosRed, size: 20),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '后天有降雨预警，请注意出行安全，携带雨具。',
+                    style: TextStyle(fontSize: 13, color: AppConfig.sosRed),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _weatherCard(String day, String icon, int high, int low, String desc, int wind) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppConfig.cardBg,
+        borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+        boxShadow: AppConfig.cardShadow,
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 70,
+            child: Column(
+              children: [
+                Text(icon, style: const TextStyle(fontSize: 32)),
+                const SizedBox(height: 4),
+                Text(day, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('$high°', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+                    const SizedBox(width: 8),
+                    Text('$low°', style: const TextStyle(fontSize: 16, color: AppConfig.textSecondary)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('$desc  $wind级风', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// 路线详情 Stub（点击热门路线卡片跳转）
+// ============================================================
+class _RouteDetailStub extends StatelessWidget {
+  final RouteModel route;
+  const _RouteDetailStub({required this.route});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(route.name)),
+      body: Padding(
+        padding: const EdgeInsets.all(AppConfig.pageMargin),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(route.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+            const SizedBox(height: 12),
+            _infoRow('全程', '${route.distanceKm.toStringAsFixed(1)} km'),
+            _infoRow('爬升', '${route.totalClimb} m'),
+            _infoRow('难度', route.difficultyLabel),
+            _infoRow('用时', route.formatDuration),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: AppConfig.primaryBtnH,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: goldGradient,
+                  borderRadius: BorderRadius.all(Radius.circular(AppConfig.buttonRadius)),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: const Text('使用此路线出发', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textInverse)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(width: 60, child: Text(label, style: const TextStyle(fontSize: 14, color: AppConfig.textSecondary))),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+        ],
+      ),
+    );
+  }
 }
