@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/scenario_config.dart';
 import '../models/trip_model.dart';
-import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 
 class RouteDetailPage extends StatelessWidget {
   final TripModel trip;
@@ -15,7 +15,7 @@ class RouteDetailPage extends StatelessWidget {
     final emotionPoints = trip.trackPoints.where((p) => p.emotionTag != null).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
+      backgroundColor: AppConfig.bgMain,
       appBar: AppBar(title: Text(trip.name), backgroundColor: Colors.white),
       body: CustomScrollView(slivers: [
         SliverToBoxAdapter(
@@ -38,9 +38,9 @@ class RouteDetailPage extends StatelessWidget {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: AppTheme.secondaryBg, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(12)),
                   child: Text(trip.status == TripStatus.completed ? '已完成' : '进行中',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                    style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                 ),
               ]),
               const SizedBox(height: 16),
@@ -60,9 +60,9 @@ class RouteDetailPage extends StatelessWidget {
             child: Container(
               color: Colors.white, padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Icon(Icons.format_quote, size: 16, color: AppTheme.textAux),
+                const Icon(Icons.format_quote, size: 16, color: AppConfig.textSecondary),
                 const SizedBox(width: 4),
-                Expanded(child: Text(trip.personalNote!, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, fontStyle: FontStyle.italic))),
+                Expanded(child: Text(trip.personalNote!, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary, fontStyle: FontStyle.italic))),
               ]),
             ),
           ),
@@ -73,9 +73,9 @@ class RouteDetailPage extends StatelessWidget {
             child: Container(
               color: Colors.white, padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('旅途情绪曲线', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+                const Text('旅途情绪曲线', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
                 const SizedBox(height: 4),
-                const Text('每次标记的情绪记录在轨迹时间轴上', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                const Text('每次标记的情绪记录在轨迹时间轴上', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                 const SizedBox(height: 16),
                 SizedBox(height: 80, child: _buildEmotionCurve(emotionPoints, trip.trackPoints.first.timestamp, trip.trackPoints.last.timestamp)),
               ]),
@@ -97,12 +97,12 @@ class RouteDetailPage extends StatelessWidget {
                       Text(meta.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(meta.color))),
                       const Spacer(),
                       Text('${pt.timestamp.hour.toString().padLeft(2, '0')}:${pt.timestamp.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                        style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                       const SizedBox(width: 8),
-                      const Icon(Icons.location_on, size: 14, color: AppTheme.textAux),
+                      const Icon(Icons.location_on, size: 14, color: AppConfig.textSecondary),
                       const SizedBox(width: 2),
                       Text('${pt.latitude.toStringAsFixed(4)}, ${pt.longitude.toStringAsFixed(4)}',
-                        style: const TextStyle(fontSize: 11, color: AppTheme.textAux)),
+                        style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
                     ]),
                   );
                 }),
@@ -114,13 +114,13 @@ class RouteDetailPage extends StatelessWidget {
             child: Container(
               color: Colors.white, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.all(16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('装备清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+                const Text('装备清单', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
                 const SizedBox(height: 8),
                 ...trip.equipmentSnapshot.entries.map((e) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    SizedBox(width: 60, child: Text(e.key, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
-                    Expanded(child: Text(e.value.join('、'), style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary))),
+                    SizedBox(width: 60, child: Text(e.key, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary))),
+                    Expanded(child: Text(e.value.join('、'), style: const TextStyle(fontSize: 13, color: AppConfig.textPrimary))),
                   ]),
                 )),
               ]),
@@ -240,10 +240,10 @@ class RouteDetailPage extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(Icons.landscape, size: 18, color: sceneColor), const SizedBox(width: 6),
-          const Text('路段分析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          const Text('路段分析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
         ]),
         const SizedBox(height: 16),
-        const Text('坡度占比', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+        const Text('坡度占比', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
@@ -263,7 +263,7 @@ class RouteDetailPage extends StatelessWidget {
           _gradientLegend(const Color(0xFF3498DB), '下坡'),
         ]),
         const SizedBox(height: 16),
-        const Text('路面类型', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+        const Text('路面类型', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
         const SizedBox(height: 8),
         Row(children: [
           Expanded(child: _roadSurfaceChip(Icons.add_road, '铺装路面', '68%')),
@@ -285,26 +285,26 @@ class RouteDetailPage extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textAux)),
+      Text(label, style: const TextStyle(fontSize: 10, color: AppConfig.textSecondary)),
     ]);
   }
 
   Widget _roadSurfaceChip(IconData icon, String label, String pct) {
     return Container(padding: const EdgeInsets.symmetric(vertical: 6), child: Column(children: [
-      Icon(icon, size: 18, color: AppTheme.textAux), const SizedBox(height: 4),
-      Text(pct, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-      Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.textAux)),
+      Icon(icon, size: 18, color: AppConfig.textSecondary), const SizedBox(height: 4),
+      Text(pct, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+      Text(label, style: const TextStyle(fontSize: 9, color: AppConfig.textSecondary)),
     ]));
   }
 
   Widget _statCard(IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: AppTheme.secondaryBg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
       child: Column(children: [
-        Icon(icon, size: 16, color: AppTheme.textAux), const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textAux)),
+        Icon(icon, size: 16, color: AppConfig.textSecondary), const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppConfig.textSecondary)),
       ]),
     );
   }
@@ -319,10 +319,10 @@ class RouteDetailPage extends StatelessWidget {
       color: Colors.white, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.alt_route, size: 18, color: AppTheme.textPrimary), const SizedBox(width: 6),
-          const Text('沿途补给', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          const Icon(Icons.alt_route, size: 18, color: AppConfig.textPrimary), const SizedBox(width: 6),
+          const Text('沿途补给', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
           const Spacer(),
-          Text('共${supplyCount}处', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+          Text('共${supplyCount}处', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
         ]),
         const SizedBox(height: 12),
         ...List.generate(supplyCount, (i) {
@@ -331,16 +331,16 @@ class RouteDetailPage extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(children: [
-              Container(width: 36, height: 36, decoration: BoxDecoration(color: AppTheme.secondaryBg, borderRadius: BorderRadius.circular(8)),
-                child: Icon(icons[idx], size: 18, color: AppTheme.textSecondary)),
+              Container(width: 36, height: 36, decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icons[idx], size: 18, color: AppConfig.textSecondary)),
               const SizedBox(width: 10),
-              Expanded(child: Text(labels[idx], style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
+              Expanded(child: Text(labels[idx], style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(border: Border.all(color: AppTheme.textAux.withOpacity(0.3)), borderRadius: BorderRadius.circular(10)),
-                child: Text('距起点 ${km}km', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary))),
+                decoration: BoxDecoration(border: Border.all(color: AppConfig.textSecondary.withOpacity(0.3)), borderRadius: BorderRadius.circular(10)),
+                child: Text('距起点 ${km}km', style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary))),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, size: 16, color: AppTheme.textAux),
+              const Icon(Icons.chevron_right, size: 16, color: AppConfig.textSecondary),
             ]),
           );
         }),
@@ -361,8 +361,8 @@ class RouteDetailPage extends StatelessWidget {
       color: Colors.white, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.rate_review_outlined, size: 18, color: AppTheme.textPrimary), const SizedBox(width: 6),
-          const Text('用户点评', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          const Icon(Icons.rate_review_outlined, size: 18, color: AppConfig.textPrimary), const SizedBox(width: 6),
+          const Text('用户点评', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -371,14 +371,14 @@ class RouteDetailPage extends StatelessWidget {
               Icon(Icons.star, size: 14, color: Color(0xFFFF9800)), SizedBox(width: 4),
               Text('4.8', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE65100))),
               SizedBox(width: 4),
-              Text('(127条)', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+              Text('(127条)', style: TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
             ])),
         ]),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           const Column(children: [
-            Text('4.8', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-            Text('总分', style: TextStyle(fontSize: 10, color: AppTheme.textAux)),
+            Text('4.8', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppConfig.textPrimary)),
+            Text('总分', style: TextStyle(fontSize: 10, color: AppConfig.textSecondary)),
           ]),
           const SizedBox(width: 16),
           Expanded(child: Column(children: [
@@ -395,20 +395,20 @@ class RouteDetailPage extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Text(r.avatar, style: const TextStyle(fontSize: 20)), const SizedBox(width: 8),
-              Text(r.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+              Text(r.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
               const Spacer(),
               Icon(Icons.star, size: 14, color: const Color(0xFFFF9800)), const SizedBox(width: 2),
               Text(r.rating, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFE65100))),
               const SizedBox(width: 8),
-              Text(r.date, style: const TextStyle(fontSize: 11, color: AppTheme.textAux)),
+              Text(r.date, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
             ]),
             const SizedBox(height: 6),
-            Text(r.text, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.5)),
+            Text(r.text, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary, height: 1.5)),
           ]),
         )),
         Center(child: TextButton(
           onPressed: () {},
-          child: const Text('查看全部127条评价', style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+          child: const Text('查看全部127条评价', style: TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
         )),
       ]),
     );
@@ -416,31 +416,31 @@ class RouteDetailPage extends StatelessWidget {
 
   Widget _ratingBar(String label, int pct) {
     return Row(children: [
-      SizedBox(width: 24, child: Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textAux))),
+      SizedBox(width: 24, child: Text(label, style: const TextStyle(fontSize: 10, color: AppConfig.textSecondary))),
       Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(2), child: LinearProgressIndicator(
-        value: pct / 100.0, backgroundColor: AppTheme.secondaryBg, color: const Color(0xFFFF9800), minHeight: 6))),
+        value: pct / 100.0, backgroundColor: AppConfig.bgMain, color: const Color(0xFFFF9800), minHeight: 6))),
       const SizedBox(width: 6),
-      SizedBox(width: 24, child: Text('$pct%', style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary), textAlign: TextAlign.right)),
+      SizedBox(width: 24, child: Text('$pct%', style: const TextStyle(fontSize: 10, color: AppConfig.textSecondary), textAlign: TextAlign.right)),
     ]);
   }
 
   Widget _sceneDataItem(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: AppTheme.secondaryBg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
       child: Column(children: [
-        Icon(icon, size: 18, color: AppTheme.textAux), const SizedBox(height: 6),
-        Text(value, style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary), textAlign: TextAlign.center),
+        Icon(icon, size: 18, color: AppConfig.textSecondary), const SizedBox(height: 6),
+        Text(value, style: const TextStyle(fontSize: 12, color: AppConfig.textPrimary), textAlign: TextAlign.center),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textAux)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppConfig.textSecondary)),
       ]),
     );
   }
 
   Widget _dataChip(String label, String value) {
     return Column(children: [
-      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-      Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+      Text(label, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
     ]);
   }
 }
@@ -480,7 +480,7 @@ class _EmotionCurvePainter extends CustomPainter {
       final tp = TextPainter(text: TextSpan(text: meta.emoji, style: const TextStyle(fontSize: 10)), textDirection: TextDirection.ltr);
       tp.layout(); tp.paint(canvas, Offset(x - tp.width / 2, y - 28));
       final timeLabel = '${pt.timestamp.hour}:${pt.timestamp.minute.toString().padLeft(2, '0')}';
-      final ttp = TextPainter(text: TextSpan(text: timeLabel, style: const TextStyle(fontSize: 9, color: AppTheme.textAux)), textDirection: TextDirection.ltr);
+      final ttp = TextPainter(text: TextSpan(text: timeLabel, style: const TextStyle(fontSize: 9, color: AppConfig.textSecondary)), textDirection: TextDirection.ltr);
       ttp.layout(); ttp.paint(canvas, Offset(x - ttp.width / 2, baseY + 4));
       prevX = x; prevY = y;
     }

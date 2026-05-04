@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/scenario_provider.dart';
-import '../providers/auth_provider.dart';
+import '../config/app_config.dart';
 import '../config/scenario_config.dart';
-import '../theme/app_theme.dart';
-import '../models/user_model.dart';
-import '../models/route_model.dart';
+import '../providers/scenario_provider.dart';
+import '../providers/trip_provider.dart';
+import '../models/trip_model.dart';
 import 'offline_maps_page.dart';
+import 'privacy_page.dart';
+import 'user_agreement_page.dart';
+import 'navigation_page.dart';
 
+// ============================================================
+// 我的个人中心（底部"我的"Tab）
+// ============================================================
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -17,331 +22,308 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _trips = _mockTrips();
-
   @override
   Widget build(BuildContext context) {
+    final tripProv = context.watch<TripProvider>();
     final scenario = context.watch<ScenarioProvider>().scenario;
-    final sceneColor = ScenarioConfig.of(scenario).primaryColor;
-    final auth = context.watch<AuthProvider>();
-    final user = auth.user;
+    final cfg = ScenarioConfig.of(scenario);
+
+    final activeTrip = tripProv.activeTrip;
+    final completed = tripProv.completedTrips;
+    final totalKm = completed.fold<double>(0, (s, t) => s + t.totalDistanceKm);
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
-      body: CustomScrollView(
-        slivers: [
-          // ===== 个人信息卡片 =====
-          SliverToBoxAdapter(child: _buildProfileCard(user, sceneColor)),
+      backgroundColor: AppConfig.bgMain,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ===== 头像卡片 =====
+              _buildAvatarCard(cfg),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              // ===== 数据面板 =====
+              _buildStatPanel(totalKm, 0, completed.length),
 
-          // ===== 车库 / 装备墙 / 勋章墙 =====
-          SliverToBoxAdapter(child: _buildCollectionsRow(auth)),
+              const SizedBox(height: AppConfig.sectionGap),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              // ===== 进行中行程 =====
+              if (activeTrip != null)
+                _buildActiveTrip(activeTrip, cfg),
 
-          // ===== 历史行程 =====
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text('历史行程', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
-            ),
+              // ===== 功能列表 =====
+              _buildFuncList(context),
+
+              const SizedBox(height: 24),
+            ],
           ),
-          if (_trips.isEmpty)
-            SliverToBoxAdapter(
-              child: Container(
-                padding: const EdgeInsets.all(32),
-                child: const Text('还没有行程记录。去出发吧。', textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
-              ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (_, i) => _buildTripCard(_trips[i], sceneColor),
-                childCount: _trips.length,
-              ),
-            ),
-
-          // 设置入口
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: ListTile(
-                leading: const Icon(Icons.settings_outlined, color: AppTheme.textSecondary),
-                title: const Text('设置', style: TextStyle(fontSize: 15)),
-                trailing: const Icon(Icons.chevron_right),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                tileColor: Colors.white,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => _SettingsPage(sceneColor: sceneColor, user: user)),
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildProfileCard(UserModel user, Color sceneColor) {
+  // ==================== 头像卡片 ====================
+  Widget _buildAvatarCard(ScenarioConfig cfg) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 56, 16, 24),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 24, AppConfig.pageMargin, 24),
+      decoration: const BoxDecoration(
+        color: AppConfig.glassBg,
+        border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
+      ),
+      child: Row(
         children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: AppTheme.secondaryBg,
-            child: Text(user.nickname.isNotEmpty ? user.nickname[0] : '?',
-              style: const TextStyle(fontSize: 24, color: AppTheme.textSecondary)),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(user.nickname.isNotEmpty ? user.nickname : '去野探索者',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-              if (user.verified) ...[const SizedBox(width: 4), const Icon(Icons.verified, size: 18, color: Color(0xFF2196F3))],
-            ],
-          ),
-          const SizedBox(height: 4),
-          if (user.bio != null && user.bio!.isNotEmpty)
-            Text(user.bio!, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-          const SizedBox(height: 16),
-          // 统计数据
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _statItem('${user.tripCount}', '行程'),
-              _statItem('${user.totalDistanceKm}', '公里'),
-              _statItem('${user.badges.length}', '勋章'),
-              _statItem(DateTime.now().difference(user.joinDate).inDays.toString(), '天'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // 编辑资料
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: sceneColor),
-              foregroundColor: sceneColor,
-              minimumSize: const Size(100, 36),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          // 头像
+          Container(
+            width: 64, height: 64,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [cfg.primaryColor, cfg.primaryColor.withOpacity(0.6)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: cfg.primaryColor.withOpacity(0.25),
+                  blurRadius: 12, offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Text('编辑资料', style: TextStyle(fontSize: 13)),
+            child: const Center(
+              child: Text('🌍', style: TextStyle(fontSize: 28)),
+            ),
           ),
+
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('探险家 · 去野', style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary,
+                )),
+                const SizedBox(height: 4),
+                const Text('用脚步丈量世界', style: TextStyle(
+                  fontSize: 13, color: AppConfig.textSecondary,
+                )),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: cfg.primaryColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('Lv.5 行者', style: TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600, color: cfg.primaryColor,
+                      )),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const Icon(Icons.chevron_right, size: 24, color: AppConfig.textSecondary),
         ],
       ),
     );
   }
 
-  Widget _statItem(String value, String label) {
+  // ==================== 数据面板 ====================
+  Widget _buildStatPanel(double km, int climb, int routes) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin, vertical: AppConfig.cardGap),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: AppConfig.cardBg,
+        borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+        boxShadow: AppConfig.cardShadow,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _statItem('累计里程', '${km.toStringAsFixed(0)} km'),
+          _statItem('累计爬升', '$climb m'),
+          _statItem('路线完成', '$routes 条'),
+        ],
+      ),
+    );
+  }
+
+  Widget _statItem(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        Text(value, style: const TextStyle(
+          fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary,
+        )),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(
+          fontSize: 12, color: AppConfig.textSecondary,
+        )),
       ],
     );
   }
 
-  Widget _buildCollectionsRow(AuthProvider auth) {
+  // ==================== 进行中行程 ====================
+  Widget _buildActiveTrip(TripModel trip, ScenarioConfig cfg) {
+    final scenario = context.read<ScenarioProvider>().scenario;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(child: _collectionCard('🚗', '车库', '${auth.user.vehicleIds.length}辆')),
-          const SizedBox(width: 12),
-          Expanded(child: _collectionCard('🎒', '装备墙', '查看')),
-          const SizedBox(width: 12),
-          Expanded(child: _collectionCard('🏅', '勋章墙', '${auth.user.badges.length}枚')),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(
+            builder: (_) => NavigationPage(scenario: scenario),
+          ));
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppConfig.cardBg,
+            borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+            boxShadow: AppConfig.cardShadow,
+            border: Border.all(color: AppConfig.goldStart.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.directions_bike, size: 24, color: AppConfig.goldEnd),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('进行中的行程', style: TextStyle(
+                      fontSize: 12, color: AppConfig.textSecondary,
+                    )),
+                    Text('${trip.totalDistanceKm.toStringAsFixed(1)} km · 继续追踪', style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary,
+                    )),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppConfig.goldStart.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('继续', style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.goldEnd,
+                )),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _collectionCard(String emoji, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.divider, width: 0.5),
-      ),
+  // ==================== 功能列表 ====================
+  Widget _buildFuncList(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Column(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 6),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textAux)),
+          const SizedBox(height: AppConfig.cardGap),
+
+          _funcGroup('我的档案', [
+            _FuncItem(Icons.route_outlined,  '我的轨迹',   AppConfig.cyclePrimary, () {}),
+            _FuncItem(Icons.star_outlined,  '我的收藏',   AppConfig.goldStart, () {}),
+            _FuncItem(Icons.emoji_events_outlined, '我的勋章', AppConfig.motoPrimary, () {}),
+          ]),
+
+          const SizedBox(height: AppConfig.cardGap),
+          _funcGroup('探索', [
+            _FuncItem(Icons.public_outlined, '我的地图',  AppConfig.drivePrimary, () {}),
+            _FuncItem(Icons.auto_graph_outlined, '年度报告', AppConfig.cyclePrimary, () {}),
+          ]),
+
+          const SizedBox(height: AppConfig.cardGap),
+          _funcGroup('工具', [
+            _FuncItem(Icons.cloud_download_outlined, '离线地图', AppConfig.cyclePrimary, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineMapsPage()));
+            }),
+          ]),
+
+          const SizedBox(height: AppConfig.cardGap),
+          _funcGroup('设置', [
+            _FuncItem(Icons.lock_outlined,        '隐私',      AppConfig.textSecondary, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPage()));
+            }),
+            _FuncItem(Icons.description_outlined, '用户协议',  AppConfig.textSecondary, () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAgreementPage()));
+            }),
+            _FuncItem(Icons.delete_outline_outlined, '缓存清理', AppConfig.textSecondary, () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('缓存已清理')),
+              );
+            }),
+            _FuncItem(Icons.info_outline, '关于去野', AppConfig.textSecondary, () {
+              showAboutDialog(
+                context: context,
+                applicationName: AppConfig.appName,
+                applicationVersion: '1.1.0',
+                children: [
+                  const Text('去野 · 去探索\n户外移动指挥官'),
+                ],
+              );
+            }),
+          ]),
         ],
       ),
     );
   }
 
-  Widget _buildTripCard(RouteModel trip, Color sceneColor) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+  Widget _funcGroup(String title, List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppConfig.cardBg,
+        borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+        boxShadow: AppConfig.cardShadow,
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+}
+
+// ===== 功能项 =====
+class _FuncItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+  const _FuncItem(this.icon, this.title, this.color, this.onTap);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(trip.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: ScenarioConfig.of(trip.scenario).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(ScenarioConfig.of(trip.scenario).label,
-                    style: TextStyle(fontSize: 11, color: ScenarioConfig.of(trip.scenario).primaryColor)),
-                ),
-              ],
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 20, color: color),
             ),
-            const SizedBox(height: 8),
-            Text('${trip.formatDate} · ${trip.formatDistance} · ${trip.formatDuration}',
-              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-            if (trip.moodTag != null) ...[
-              const SizedBox(height: 4),
-              Text(trip.moodTag!, style: TextStyle(fontSize: 12, color: sceneColor)),
-            ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(title, style: const TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textPrimary,
+              )),
+            ),
+            const Icon(Icons.chevron_right, size: 20, color: AppConfig.textSecondary),
           ],
         ),
       ),
     );
   }
 }
-
-// ===== 设置页 =====
-class _SettingsPage extends StatelessWidget {
-  final Color sceneColor;
-  final UserModel user;
-  const _SettingsPage({required this.sceneColor, required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
-      appBar: AppBar(title: const Text('设置')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _section('通知', [
-            _switchItem('新消息推送', true),
-            _switchItem('SOS 提醒', true),
-          ]),
-          _section('GPS 与记录', [
-            _optionItem('轨迹记录间隔', '3秒'),
-            _switchItem('后台保活追踪', true),
-          ]),
-          _section('数据', [
-            _optionItem('清理缓存', '128MB'),
-            _optionItem('导出轨迹数据', 'GPX'),
-          ]),
-          _section('隐私', [
-            _switchItem('允许抓取位置', true),
-            _switchItem('数据共享给队友', false),
-          ]),
-          _section('工具', [
-            ListTile(
-              title: const Text('离线地图', style: TextStyle(fontSize: 14)),
-              leading: const Icon(Icons.map_outlined, size: 20, color: AppTheme.textSecondary),
-              trailing: const Icon(Icons.chevron_right, size: 18, color: AppTheme.textAux),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const OfflineMapsPage()));
-              },
-              shape: const RoundedRectangleBorder(),
-            ),
-          ]),
-          _section('关于', [
-            _optionItem('版本', '2.0.0-beta'),
-            _optionItem('用户协议', ''),
-            _optionItem('隐私政策', ''),
-            _optionItem('意见反馈', ''),
-            _optionItem('开源许可', ''),
-          ]),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 44,
-            child: OutlinedButton(
-              onPressed: () {
-                context.read<AuthProvider>().logout();
-                Navigator.pop(context);
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.warning),
-                foregroundColor: AppTheme.warning,
-              ),
-              child: const Text('退出登录'),
-            ),
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _section(String title, List<Widget> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 16, 0, 8),
-          child: Text(title, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-        ),
-        Card(
-          child: Column(children: items.map((w) => w).toList()),
-        ),
-      ],
-    );
-  }
-
-  Widget _switchItem(String title, bool value) {
-    return ListTile(
-      title: Text(title, style: const TextStyle(fontSize: 14)),
-      trailing: Switch(value: value, onChanged: (_) {}, activeColor: sceneColor),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-    );
-  }
-
-  Widget _optionItem(String title, String subtitle) {
-    return ListTile(
-      title: Text(title, style: const TextStyle(fontSize: 14)),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
-          if (subtitle.isEmpty) const SizedBox(width: 0) else const SizedBox(width: 4),
-          if (subtitle.isEmpty) const SizedBox.shrink() else const Icon(Icons.chevron_right, size: 18, color: AppTheme.textAux),
-        ],
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      onTap: () {},
-      shape: const RoundedRectangleBorder(),
-    );
-  }
-}
-
-List<RouteModel> _mockTrips() => [
-  RouteModel(
-    id: 't1', name: '周末环西湖骑行', scenario: OutdoorScenario.cycle,
-    difficulty: 2, distanceKm: 45.3, durationMinutes: 180,
-    startTime: DateTime.now().subtract(const Duration(days: 7)),
-    endTime: DateTime.now().subtract(const Duration(days: 7, hours: 3)),
-    tags: const ['休闲', '城市'], moodTag: '#心情不错',
-  ),
-  RouteModel(
-    id: 't2', name: '徽杭古道摩旅', scenario: OutdoorScenario.moto,
-    difficulty: 3, distanceKm: 280, durationMinutes: 480,
-    startTime: DateTime.now().subtract(const Duration(days: 14)),
-    tags: const ['古道', '长途'],
-    associatedMusic: 'Take Me Home, Country Roads',
-  ),
-];

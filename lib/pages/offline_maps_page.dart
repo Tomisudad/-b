@@ -44,7 +44,7 @@ class _OfflineMapsViewState extends State<_OfflineMapsView> {
     final totalMB = OfflineMapProvider.availableRegions.fold<double>(0, (s, r) => s + r.sizeMB);
 
     return Scaffold(
-      backgroundColor: AppConfig.bgSecondary,
+      backgroundColor: AppConfig.bgMain,
       appBar: AppBar(
         title: const Text('离线地图', style: TextStyle(fontFamily: 'PingFang SC', fontWeight: FontWeight.w600)),
         backgroundColor: Colors.white,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 
 class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
@@ -29,7 +29,7 @@ class PrivacyPage extends StatelessWidget {
           '- 可申请删除账号和所有数据\n\n'
           '5. 联系我们\n'
           '如有隐私相关问题，请通过应用内反馈渠道联系我们。',
-          style: TextStyle(fontSize: 15, height: 1.8, color: AppTheme.textPrimary)),
+          style: TextStyle(fontSize: 15, height: 1.8, color: AppConfig.textPrimary)),
       ]),
     );
   }

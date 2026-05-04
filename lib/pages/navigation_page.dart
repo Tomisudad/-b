@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/scenario_config.dart';
-import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 import '../services/tracking_service.dart';
 import '../services/voice_service.dart';
 import '../services/location_service.dart';
@@ -64,7 +64,7 @@ class _NavigationPageState extends State<NavigationPage> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Row(children: [
-          Icon(Icons.warning_amber_rounded, color: AppTheme.warning),
+          Icon(Icons.warning_amber_rounded, color: AppConfig.sosRed),
           const SizedBox(width: 8),
           const Text('紧急求助', style: TextStyle(fontSize: 18)),
         ]),
@@ -72,7 +72,7 @@ class _NavigationPageState extends State<NavigationPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryBg,
+              color: AppConfig.bgMain,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(msg, style: const TextStyle(fontSize: 13, height: 1.6)),
@@ -85,7 +85,7 @@ class _NavigationPageState extends State<NavigationPage> {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: const Text('已复制，可粘贴到微信/SMS发送'),
-                  backgroundColor: AppTheme.warning),
+                  backgroundColor: AppConfig.sosRed),
               );
             },
             child: const Text('复制并分享'),
@@ -111,7 +111,7 @@ class _NavigationPageState extends State<NavigationPage> {
 
   Widget _buildConfirmationPage(Color sceneColor, ScenarioConfig cfg) {
     return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
+      backgroundColor: AppConfig.bgMain,
       body: SafeArea(
         child: Column(children: [
           const Spacer(),
@@ -126,7 +126,7 @@ class _NavigationPageState extends State<NavigationPage> {
           const SizedBox(height: 16),
           Text(cfg.label, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: sceneColor)),
           const SizedBox(height: 8),
-          const Text('准备出发', style: TextStyle(fontSize: 16, color: AppTheme.textSecondary)),
+          const Text('准备出发', style: TextStyle(fontSize: 16, color: AppConfig.textSecondary)),
           const SizedBox(height: 32),
 
           // Route preferences
@@ -160,7 +160,7 @@ class _NavigationPageState extends State<NavigationPage> {
             ]),
           ),
           const SizedBox(height: 12),
-          Text(_routePrefSummary(), style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+          Text(_routePrefSummary(), style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
 
           const Spacer(),
           Padding(
@@ -212,8 +212,8 @@ class _NavigationPageState extends State<NavigationPage> {
               Positioned(top: 16, left: 16, right: 16, child: Column(children: [
                 Text('${speed.toInt()}', style: const TextStyle(
                   fontSize: 72, fontWeight: FontWeight.w300,
-                  fontFamily: 'SF Pro Display', color: AppTheme.textPrimary, height: 0.9)),
-                const Text('km/h', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
+                  fontFamily: 'SF Pro Display', color: AppConfig.textPrimary, height: 0.9)),
+                const Text('km/h', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)),
                 if (_lastEmotion != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -243,7 +243,7 @@ class _NavigationPageState extends State<NavigationPage> {
                 ),
                 const SizedBox(height: 4),
                 Text('已骑 ${dist.toStringAsFixed(1)}km',
-                  style: const TextStyle(fontSize: 15, color: AppTheme.textSecondary)),
+                  style: const TextStyle(fontSize: 15, color: AppConfig.textSecondary)),
               ])),
 
               // Bottom button area
@@ -251,7 +251,7 @@ class _NavigationPageState extends State<NavigationPage> {
                 if (_showEmotionPicker) _buildEmotionGrid(sceneColor),
                 Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                   _driveCircleBtn(Icons.emoji_emotions, '心情', () => setState(() => _showEmotionPicker = !_showEmotionPicker), sceneColor),
-                  _driveCircleBtn(Icons.warning_amber_rounded, 'SOS', _showSOS, AppTheme.warning),
+                  _driveCircleBtn(Icons.warning_amber_rounded, 'SOS', _showSOS, AppConfig.sosRed),
                   _driveCircleBtn(Icons.stop_circle, '结束', _endNavigation, sceneColor, primary: true),
                 ]),
               ])),

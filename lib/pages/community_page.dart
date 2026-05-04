@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../providers/scenario_provider.dart';
 import '../config/scenario_config.dart';
 import '../config/app_config.dart';
-import '../theme/app_theme.dart';
 import '../models/partner_model.dart';
 
 class CommunityPage extends StatefulWidget {
@@ -70,7 +69,7 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppTheme.divider, width: 0.5),
+                          border: Border.all(color: AppConfig.divider, width: 0.5),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Column(
@@ -89,17 +88,17 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(p.content, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary)),
+                                  Text(p.content, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: AppConfig.textPrimary)),
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      CircleAvatar(radius: 10, backgroundColor: AppTheme.secondaryBg, child: const Icon(Icons.person, size: 12, color: AppTheme.textAux)),
+                                      CircleAvatar(radius: 10, backgroundColor: AppConfig.bgMain, child: const Icon(Icons.person, size: 12, color: AppConfig.textSecondary)),
                                       const SizedBox(width: 6),
-                                      Text(p.authorName, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                                      Text(p.authorName, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
                                       const Spacer(),
-                                      const Icon(Icons.favorite_border, size: 14, color: AppTheme.textAux),
+                                      const Icon(Icons.favorite_border, size: 14, color: AppConfig.textSecondary),
                                       const SizedBox(width: 2),
-                                      Text('${p.likeCount}', style: const TextStyle(fontSize: 11, color: AppTheme.textAux)),
+                                      Text('${p.likeCount}', style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
                                     ],
                                   ),
                                 ],
@@ -159,7 +158,7 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
               maxLines: 4,
               decoration: const InputDecoration(
                 hintText: '写点什么...',
-                hintStyle: TextStyle(color: AppTheme.textAux),
+                hintStyle: TextStyle(color: AppConfig.textSecondary),
               ),
             ),
             const SizedBox(height: 12),
@@ -204,8 +203,8 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
               children: [
                 Row(
                   children: [
-                    CircleAvatar(radius: 20, backgroundColor: AppTheme.secondaryBg,
-                      child: Text(p.nickname[0], style: const TextStyle(color: AppTheme.textPrimary))),
+                    CircleAvatar(radius: 20, backgroundColor: AppConfig.bgMain,
+                      child: Text(p.nickname[0], style: const TextStyle(color: AppConfig.textPrimary))),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -220,7 +219,7 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                               ],
                             ],
                           ),
-                          Text(p.formatDate, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                          Text(p.formatDate, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                         ],
                       ),
                     ),
@@ -239,7 +238,7 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                 Text(p.destination, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 if (p.description != null) ...[
                   const SizedBox(height: 4),
-                  Text(p.description!, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                  Text(p.description!, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
                 ],
                 if (p.tags.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -249,7 +248,7 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                       label: Text(t, style: const TextStyle(fontSize: 11)),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.compact,
-                      backgroundColor: AppTheme.secondaryBg,
+                      backgroundColor: AppConfig.bgMain,
                       side: BorderSide.none,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                     )).toList(),
@@ -258,17 +257,17 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.people_outline, size: 16, color: AppTheme.textSecondary),
+                    Icon(Icons.people_outline, size: 16, color: AppConfig.textSecondary),
                     const SizedBox(width: 4),
-                    Text('${p.joined}/${p.capacity}人', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                    Text('${p.joined}/${p.capacity}人', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
                     const Spacer(),
                     SizedBox(
                       height: 36,
                       child: ElevatedButton(
                         onPressed: p.isFull ? null : () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: p.isFull ? AppTheme.secondaryBg : sceneColor,
-                          foregroundColor: p.isFull ? AppTheme.textAux : Colors.white,
+                          backgroundColor: p.isFull ? AppConfig.bgMain : sceneColor,
+                          foregroundColor: p.isFull ? AppConfig.textSecondary : Colors.white,
                           elevation: 0,
                           minimumSize: const Size(72, 36),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -392,14 +391,14 @@ class _CommunityPageState extends State<CommunityPage> with SingleTickerProvider
     final sceneColor = ScenarioConfig.of(scenario).primaryColor;
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
+      backgroundColor: AppConfig.bgMain,
       appBar: AppBar(
         title: const Text('社区'),
         bottom: TabBar(
           controller: _tabCtrl,
           indicatorColor: sceneColor,
           labelColor: sceneColor,
-          unselectedLabelColor: AppTheme.textSecondary,
+          unselectedLabelColor: AppConfig.textSecondary,
           tabs: [
             const Tab(text: '动态'),
             const Tab(text: '找搭子'),

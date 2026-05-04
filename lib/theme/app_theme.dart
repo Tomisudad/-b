@@ -1,121 +1,163 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-
 import '../config/app_config.dart';
 
+/// 去野 - 应用主题（Material 3 亮色）
 class AppTheme {
   AppTheme._();
 
-  static const Color primaryBg = AppConfig.bgPrimary;
-  static const Color secondaryBg = AppConfig.bgSecondary;
-  static const Color textPrimary = AppConfig.textPrimary;
-  static const Color textSecondary = AppConfig.textSecondary;
-  static const Color textAux = AppConfig.textAux;
-  static const Color divider = AppConfig.divider;
-  static const Color warning = AppConfig.warning;
+  static ThemeData get light {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppConfig.cyclePrimary,
+        brightness: Brightness.light,
+        surface: AppConfig.cardBg,
+      ),
+      scaffoldBackgroundColor: AppConfig.bgMain,
 
-  static ThemeData get light => ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    scaffoldBackgroundColor: primaryBg,
-    colorScheme: const ColorScheme.light(
-      surface: AppConfig.bgPrimary,
-      onSurface: AppConfig.textPrimary,
-      outline: AppConfig.divider,
-      error: AppConfig.warning,
-    ),
+      // ===== 字体 =====
+      fontFamily: AppConfig.fontFamily,
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 28, fontWeight: FontWeight.w700,
+          color: AppConfig.textPrimary, letterSpacing: -0.5,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20, fontWeight: FontWeight.w700,
+          color: AppConfig.textPrimary,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 18, fontWeight: FontWeight.w700,
+          color: AppConfig.textPrimary,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w400,
+          color: AppConfig.textPrimary,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w400,
+          color: AppConfig.textSecondary,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12, fontWeight: FontWeight.w400,
+          color: AppConfig.textSecondary,
+        ),
+      ),
 
-    // 字体
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(
-        fontSize: 20, fontWeight: FontWeight.w500,
-        color: textPrimary, fontFamily: 'PingFang SC',
-      ),
-      bodyLarge: TextStyle(
-        fontSize: 16, fontWeight: FontWeight.w400,
-        color: textPrimary, fontFamily: 'PingFang SC',
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w400,
-        color: textSecondary, fontFamily: 'PingFang SC',
-      ),
-      bodySmall: TextStyle(
-        fontSize: 12, fontWeight: FontWeight.w400,
-        color: textAux, fontFamily: 'PingFang SC',
-      ),
-      labelMedium: TextStyle(
-        fontSize: 11, fontWeight: FontWeight.w400,
-        color: textAux, fontFamily: 'PingFang SC',
-      ),
-    ),
-
-    // 分割线
-    dividerTheme: const DividerThemeData(color: divider, thickness: 0.5, space: 0),
-
-    // 卡片
-    cardTheme: CardTheme(
-      color: primaryBg,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-        side: const BorderSide(color: divider, width: 0.5),
-      ),
-      margin: EdgeInsets.zero,
-    ),
-
-    // 按钮
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
+      // ===== 卡片 =====
+      cardTheme: CardTheme(
+        color: AppConfig.cardBg,
         elevation: 0,
-        backgroundColor: AppConfig.cyclePrimary,
-        foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConfig.buttonRadius),
+          borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+          side: const BorderSide(color: AppConfig.divider, width: 0.5),
         ),
-        minimumSize: const Size(double.infinity, AppConfig.browseButtonHeight),
-        textStyle: const TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'PingFang SC',
+        margin: EdgeInsets.zero,
+      ),
+
+      // ===== AppBar =====
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppConfig.glassBg,
+        foregroundColor: AppConfig.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontSize: 18, fontWeight: FontWeight.w700,
+          color: AppConfig.textPrimary,
         ),
       ),
-    ),
 
-    // 输入框
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: secondaryBg,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConfig.inputRadius),
-        borderSide: BorderSide.none,
+      // ===== 按钮 =====
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConfig.buttonRadius),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        ),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConfig.inputRadius),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppConfig.inputRadius),
-        borderSide: const BorderSide(color: AppConfig.cyclePrimary, width: 1),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    ),
 
-    // 底部导航
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: primaryBg,
-      type: BottomNavigationBarType.fixed,
-      elevation: 0,
-      selectedLabelStyle: TextStyle(fontSize: 11, fontFamily: 'PingFang SC'),
-      unselectedLabelStyle: TextStyle(fontSize: 11, fontFamily: 'PingFang SC'),
-    ),
-
-    // AppBar
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryBg,
-      elevation: 0,
-      centerTitle: true,
-      scrolledUnderElevation: 0.5,
-      titleTextStyle: TextStyle(
-        fontSize: 20, fontWeight: FontWeight.w500,
-        color: textPrimary, fontFamily: 'PingFang SC',
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConfig.buttonRadius),
+          ),
+          side: const BorderSide(color: AppConfig.divider),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        ),
       ),
-    ),
-  );
+
+      // ===== 输入框 =====
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppConfig.bgMain,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConfig.inputRadius),
+          borderSide: const BorderSide(color: AppConfig.divider),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConfig.inputRadius),
+          borderSide: const BorderSide(color: AppConfig.divider),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppConfig.inputRadius),
+          borderSide: const BorderSide(color: AppConfig.cyclePrimary),
+        ),
+      ),
+
+      // ===== Divider =====
+      dividerTheme: const DividerThemeData(
+        color: AppConfig.divider, thickness: 0.5, space: 0,
+      ),
+
+      // ===== 底部导航 =====
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+      ),
+    );
+  }
+}
+
+/// 毛玻璃容器（辅助 widget）
+class GlassContainer extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final double? height;
+  final bool topBorder;
+
+  const GlassContainer({
+    super.key,
+    required this.child,
+    this.padding,
+    this.height,
+    this.topBorder = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: AppConfig.glassBlur, sigmaY: AppConfig.glassBlur),
+        child: Container(
+          height: height,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: AppConfig.glassBg,
+            border: Border(
+              top: topBorder ? const BorderSide(color: AppConfig.divider, width: 0.5) : BorderSide.none,
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 }

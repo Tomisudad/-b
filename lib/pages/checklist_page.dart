@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/scenario_provider.dart';
 import '../providers/checklist_provider.dart';
 import '../config/scenario_config.dart';
-import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 import '../services/amap_service.dart';
 import '../services/location_service.dart';
 
@@ -91,7 +91,7 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
                   child: LinearProgressIndicator(
                     value: prov.progress,
                     minHeight: 6,
-                    backgroundColor: AppTheme.secondaryBg,
+                    backgroundColor: AppConfig.bgMain,
                     valueColor: AlwaysStoppedAnimation<Color>(sceneColor),
                   ),
                 ),
@@ -116,12 +116,12 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
                   title: Row(
                     children: [
                       if (allChecked) const Icon(Icons.check_circle, size: 18, color: Color(0xFF2E7D32)),
-                      if (!allChecked) const Icon(Icons.circle_outlined, size: 18, color: AppTheme.textAux),
+                      if (!allChecked) const Icon(Icons.circle_outlined, size: 18, color: AppConfig.textSecondary),
                       const SizedBox(width: 8),
-                      Text(cat.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+                      Text(cat.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
                       const SizedBox(width: 8),
                       Text('${cat.items.where((i) => i.checked).length}/${cat.items.length}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textAux)),
+                        style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                     ],
                   ),
                   trailing: Row(
@@ -142,7 +142,7 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
                     return CheckboxListTile(
                       value: item.checked,
                       onChanged: (_) => prov.toggleItem(ci, ii),
-                      title: Text(item.name, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary)),
+                      title: Text(item.name, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary)),
                       activeColor: sceneColor,
                       dense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
@@ -184,7 +184,7 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
               const SizedBox(height: 8),
               ...missing.map((m) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text('· $m', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                child: Text('· $m', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
               )),
             ],
           ),
@@ -204,14 +204,14 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('出发前，给自己一句话', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textPrimary)),
+                const Text('出发前，给自己一句话', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _noteCtrl,
                   maxLines: 2,
                   decoration: const InputDecoration(
                     hintText: '比如：今天要慢一点，多看看风景',
-                    hintStyle: TextStyle(fontSize: 14, color: AppTheme.textAux),
+                    hintStyle: TextStyle(fontSize: 14, color: AppConfig.textSecondary),
                   ),
                 ),
               ],
@@ -255,14 +255,14 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${w.temperature}°  ${w.weatherDesc}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                  Text('风速${w.windSpeed}级 · UV${w.uvIndex}', style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                  Text('风速${w.windSpeed}级 · UV${w.uvIndex}', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
                 ],
               ),
             ),
             Column(
               children: [
-                Text('日出 ${w.sunrise}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                Text('日落 ${w.sunset}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                Text('日出 ${w.sunrise}', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                Text('日落 ${w.sunset}', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
               ],
             ),
           ],
@@ -278,14 +278,14 @@ class _ChecklistPageState extends State<ChecklistPage> with SingleTickerProvider
     final checklist = context.watch<ChecklistProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.secondaryBg,
+      backgroundColor: AppConfig.bgMain,
       appBar: AppBar(
         title: const Text('清单'),
         bottom: TabBar(
           controller: _tabCtrl,
           indicatorColor: sceneColor,
           labelColor: sceneColor,
-          unselectedLabelColor: AppTheme.textSecondary,
+          unselectedLabelColor: AppConfig.textSecondary,
           labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
           tabs: const [
             Tab(text: '装备库'),

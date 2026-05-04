@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 
 class UserAgreementPage extends StatelessWidget {
   const UserAgreementPage({super.key});
@@ -26,7 +26,7 @@ class UserAgreementPage extends StatelessWidget {
           '用户不得利用社区功能发布违法、违规或不当内容。\n\n'
           '五、协议修改\n'
           '我们保留修改本协议的权利，修改后将通过应用内通知。',
-          style: TextStyle(fontSize: 15, height: 1.8, color: AppTheme.textPrimary)),
+          style: TextStyle(fontSize: 15, height: 1.8, color: AppConfig.textPrimary)),
       ]),
     );
   }
