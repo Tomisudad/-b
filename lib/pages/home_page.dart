@@ -9,6 +9,7 @@ import '../config/scenario_config.dart';
 import '../services/amap_service.dart';
 import '../services/location_service.dart';
 import '../services/tracking_service.dart';
+import '../services/poi_service.dart';
 import '../models/trip_model.dart';
 import '../theme/app_theme.dart';
 import 'search_page.dart';
@@ -34,6 +35,10 @@ class _HomePageState extends State<HomePage> {
   String _currentSupplyCategory = '';
   bool _showSOSPanel = false;
 
+  List<GasStation> _gasStations = [];
+  List<Campsite> _campsites = [];
+  bool _loadingPoi = false;
+
   final _amap = AmapService.instance;
   final _loc = LocationService.instance;
 
@@ -42,6 +47,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadWeather();
     _loadTrafficAlerts();
+    _loadPoi();
   }
 
   @override
@@ -77,6 +83,19 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadPhotoSpots() async {
     final s = await _amap.fetchPhotoSpots(_loc.latitude, _loc.longitude);
     if (mounted) setState(() => _photoSpots = s);
+  }
+
+  void _loadPoi() {
+    if (_loadingPoi) return;
+    setState(() => _loadingPoi = true);
+    final poi = PoiService.instance;
+    final gs = poi.searchGasStations(_loc.latitude, _loc.longitude);
+    final cs = poi.searchCampsites(_loc.latitude, _loc.longitude);
+    if (mounted) setState(() {
+      _gasStations = gs;
+      _campsites = cs;
+      _loadingPoi = false;
+    });
   }
 
   void _startTrip() {
@@ -901,6 +920,152 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  double _poiDist(double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - _loc.latitude) * 0.0174533;
+    final dLng = (lng2 - _loc.longitude) * 0.0174533;
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_loc.latitude * 0.0174533) * cos(lat2 * 0.0174533) * sin(dLng / 2) * sin(dLng / 2);
+    return r * 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)));
+  }
+
+  Widget _buildGasStationCard(OutdoorScenario scenario) {
+    if (_loadingPoi) return _cardShell(const Center(child: Padding(
+      padding: EdgeInsets.all(24),
+      child: LinearProgressIndicator(minHeight: 2))));
+    final sceneColor = ScenarioConfig.of(scenario).primaryColor;
+    final isMoto = scenario == OutdoorScenario.moto;
+    final top = _gasStations.where((g) => !g.motorbikeProhibited || isMoto).take(4).toList();
+    if (top.isEmpty) return const SizedBox.shrink();
+    return _cardShell(
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.local_gas_station, size: 20, color: sceneColor),
+              const SizedBox(width: 8),
+              const Text('附近加油站', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            ]),
+            const SizedBox(height: 12),
+            ...top.map((g) {
+              final dist = _poiDist(g.lat, g.lng);
+              final distStr = dist < 1 ? '${(dist * 1000).toInt()}m' : '${dist.toStringAsFixed(1)}km';
+              final grades = g.fuelGrades.join('/');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: g.motorbikeProhibited ? const Color(0xFFEF5350).withOpacity(0.08) : sceneColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(g.motorbikeProhibited ? Icons.block : Icons.local_gas_station,
+                        size: 16, color: g.motorbikeProhibited ? const Color(0xFFEF5350) : sceneColor),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Flexible(child: Text(g.name, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary), overflow: TextOverflow.ellipsis)),
+                          if (g.motorbikeProhibited && isMoto)
+                            Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF5350).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: const Text('禁摩', style: TextStyle(fontSize: 9, color: Color(0xFFEF5350))),
+                            ),
+                        ]),
+                        Text('$grades    $distStr', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                      ]),
+                    ),
+                    SizedBox(
+                      height: 30,
+                      child: TextButton(
+                        onPressed: () => _startTrip(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: sceneColor, padding: const EdgeInsets.symmetric(horizontal: 10),
+                          minimumSize: Size.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            side: BorderSide(color: sceneColor.withOpacity(0.3)),
+                          ),
+                        ),
+                        child: const Text('导航', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCampsiteCard(OutdoorScenario scenario) {
+    if (_loadingPoi) return _cardShell(const Center(child: Padding(
+      padding: EdgeInsets.all(24),
+      child: LinearProgressIndicator(minHeight: 2))));
+    final sceneColor = ScenarioConfig.of(scenario).primaryColor;
+    final top5 = _campsites.take(5).toList();
+    if (top5.isEmpty) return const SizedBox.shrink();
+    return _cardShell(
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.cabin, size: 20, color: Color(0xFF5D4037)),
+              const SizedBox(width: 8),
+              const Text('附近营地/停车', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+            ]),
+            const SizedBox(height: 12),
+            ...top5.map((c) {
+              final dist = _poiDist(c.lat, c.lng);
+              final distStr = dist < 1 ? '${(dist * 1000).toInt()}m' : '${dist.toStringAsFixed(1)}km';
+              final typeIcon = c.type == CampType.camp ? '⛺' : (c.type == CampType.rv ? '🚐' : '🅿️');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(color: AppTheme.secondaryBg, borderRadius: BorderRadius.circular(8)),
+                    child: Center(child: Text(typeIcon, style: const TextStyle(fontSize: 16))),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(c.name, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary)),
+                      Text(c.description, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        if (c.hasWater) ...[const Icon(Icons.water_drop, size: 12, color: AppTheme.textAux), const SizedBox(width: 3)],
+                        if (c.hasToilet) ...[const Icon(Icons.wc, size: 12, color: AppTheme.textAux), const SizedBox(width: 3)],
+                        if (c.hasShower) ...[const Icon(Icons.shower, size: 12, color: AppTheme.textAux), const SizedBox(width: 4)],
+                        if (c.feeEstimate > 0) Text('¥${c.feeEstimate}  ', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                        Text(distStr, style: TextStyle(fontSize: 11, color: sceneColor)),
+                      ]),
+                    ]),
+                  ),
+                ]),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _cardShell(Widget child) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -984,6 +1149,8 @@ class _HomePageState extends State<HomePage> {
                   _buildCompassCard(),
                   _buildSunPhotoCard(),
                   _buildMapTrackCard(),
+                  _buildGasStationCard(scenario),
+                  _buildCampsiteCard(scenario),
                   const SizedBox(height: 80),
                 ]),
               ),
