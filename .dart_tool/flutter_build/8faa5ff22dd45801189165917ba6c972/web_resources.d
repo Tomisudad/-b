@@ -1,0 +1,1 @@
+ build\\web\\manifest.json:  C:\\Users\\14864\\.qclaw\\workspace-agent-34339a2d\\outdoor_companion\\web\\index.html C:\\Users\\14864\\.qclaw\\workspace-agent-34339a2d\\outdoor_companion\\web\\manifest.json

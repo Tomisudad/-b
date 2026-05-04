@@ -1,0 +1,22 @@
+{
+  "name": "去野",
+  "short_name": "去野",
+  "description": "户外出行 — 自驾/摩旅/骑行移动指挥官",
+  "start_url": "/-b/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2E7D32",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
