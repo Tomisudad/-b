@@ -8,7 +8,7 @@ import 'route_library_page.dart';
 import 'checklist_page.dart';
 import 'departure_page.dart';
 
-/// V4.0 首页 — 出发前决策与准备面板 + 热门路线发现
+/// V5.0 首页 — 出发前决策面板（无地图）
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -19,29 +19,24 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   OutdoorScenario _scene = OutdoorScenario.cycle;
   bool _sceneDropdownOpen = false;
-  final LayerLink _sceneLayer = LayerLink();
   OverlayEntry? _sceneOverlay;
 
-  late AnimationController _btnAnimCtrl;
-
-  // ===== Mock 天气 =====
+  // Mock 天气
   String _weatherIcon = '☀️';
   int _temperature = 24;
   int _windLevel = 2;
 
-  // ===== Mock 热门路线 =====
+  // Mock 热门路线
   late List<_HotRoute> _hotRoutes;
 
   @override
   void initState() {
     super.initState();
-    _btnAnimCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
     _genHotRoutes();
   }
 
   @override
   void dispose() {
-    _btnAnimCtrl.dispose();
     _removeOverlay();
     super.dispose();
   }
@@ -52,18 +47,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _sceneDropdownOpen = false;
   }
 
-  // ===== 场景切换 =====
+  // ===== 场景切换下拉 =====
   void _toggleScenePopup() {
-    if (_sceneDropdownOpen) {
-      _removeOverlay();
-      return;
-    }
+    if (_sceneDropdownOpen) { _removeOverlay(); return; }
     _showScenePopup();
   }
 
   void _showScenePopup() {
     _removeOverlay();
-
     final overlay = Overlay.of(context);
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
@@ -78,7 +69,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _sceneOverlay = OverlayEntry(
       builder: (ctx) => GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => _removeOverlay(),
+        onTap: _removeOverlay,
         child: Stack(
           children: [
             Positioned(
@@ -87,7 +78,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-                shadowColor: Colors.black.withOpacity(0.08),
+                shadowColor: Colors.black.withOpacity(0.1),
                 child: Container(
                   width: 150,
                   decoration: BoxDecoration(
@@ -96,11 +87,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: items.map((item) {
-                      final isSelected = _scene == item.$2;
+                    children: items.map((it) {
+                      final sel = _scene == it.$2;
                       return InkWell(
                         onTap: () {
-                          setState(() => _scene = item.$2);
+                          setState(() => _scene = it.$2);
                           _genHotRoutes();
                           _removeOverlay();
                         },
@@ -110,7 +101,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           decoration: BoxDecoration(
                             border: Border(
                               left: BorderSide(
-                                color: isSelected ? item.$3 : Colors.transparent,
+                                color: sel ? it.$3 : Colors.transparent,
                                 width: 3,
                               ),
                             ),
@@ -118,17 +109,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  item.$1,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                    color: isSelected ? item.$3 : AppConfig.textPrimary,
-                                  ),
-                                ),
+                                child: Text(it.$1, style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                                  color: sel ? it.$3 : AppConfig.textPrimary,
+                                )),
                               ),
-                              if (isSelected)
-                                Icon(Icons.check, size: 16, color: item.$3),
+                              if (sel) Icon(Icons.check, size: 16, color: it.$3),
                             ],
                           ),
                         ),
@@ -142,40 +129,39 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
       ),
     );
-
     overlay.insert(_sceneOverlay!);
     setState(() => _sceneDropdownOpen = true);
   }
 
-  // ===== 热门路线数据 =====
+  // ===== 热门路线 mock 生成 =====
   void _genHotRoutes() {
     final routes = <_HotRoute>[];
     switch (_scene) {
       case OutdoorScenario.cycle:
         routes.addAll([
-          _HotRoute('洱海环湖骑行', 1243, 5832, 42.0, 320, '2h30min', 1),
-          _HotRoute('独库公路骑行段', 987, 4102, 58.0, 1200, '4h', 3),
-          _HotRoute('太湖东山半岛', 756, 3201, 28.0, 150, '1h30min', 1),
-          _HotRoute('千岛湖绿道全程', 1532, 7200, 68.0, 580, '3h30min', 2),
-          _HotRoute('青海湖环湖', 2100, 9800, 360.0, 2800, '3天', 4),
+          _HotRoute('洱海环湖骑行', 1243, 5832, 42.0, 320, 150, 1),
+          _HotRoute('独库公路骑行段', 987, 4102, 58.0, 1200, 240, 3),
+          _HotRoute('太湖东山半岛', 756, 3201, 28.0, 150, 90, 1),
+          _HotRoute('千岛湖绿道全程', 1532, 7200, 68.0, 580, 210, 2),
+          _HotRoute('青海湖环湖', 2100, 9800, 360.0, 2800, 180, 4),
         ]);
         break;
       case OutdoorScenario.moto:
         routes.addAll([
-          _HotRoute('皖南川藏线', 1867, 8500, 120.0, 2200, '4h', 3),
-          _HotRoute('川西大环线', 3200, 15200, 680.0, 5200, '5天', 4),
-          _HotRoute('太行天路', 1543, 7100, 95.0, 1800, '3h', 2),
-          _HotRoute('G318川藏线', 5600, 28500, 2100.0, 12000, '12天', 5),
-          _HotRoute('秦岭分水岭', 892, 3900, 55.0, 1500, '2h', 2),
+          _HotRoute('皖南川藏线', 1867, 8500, 120.0, 2200, 240, 3),
+          _HotRoute('川西大环线', 3200, 15200, 680.0, 5200, 300, 4),
+          _HotRoute('太行天路', 1543, 7100, 95.0, 1800, 180, 2),
+          _HotRoute('G318川藏线', 5600, 28500, 2100.0, 12000, 720, 5),
+          _HotRoute('秦岭分水岭', 892, 3900, 55.0, 1500, 120, 2),
         ]);
         break;
       case OutdoorScenario.drive:
         routes.addAll([
-          _HotRoute('独库公路全程', 4500, 21000, 561.0, 3800, '2天', 3),
-          _HotRoute('G219新藏线', 3800, 18000, 2100.0, 8800, '10天', 5),
-          _HotRoute('川西小环线', 2800, 13500, 320.0, 2400, '2天', 2),
-          _HotRoute('青海甘肃大环线', 5200, 25000, 1800.0, 6500, '8天', 4),
-          _HotRoute('桂林阳朔山水', 1600, 7200, 85.0, 400, '3h', 1),
+          _HotRoute('独库公路全程', 4500, 21000, 561.0, 3800, 120, 3),
+          _HotRoute('G219新藏线', 3800, 18000, 2100.0, 8800, 600, 5),
+          _HotRoute('川西小环线', 2800, 13500, 320.0, 2400, 120, 2),
+          _HotRoute('青海甘肃大环线', 5200, 25000, 1800.0, 6500, 480, 4),
+          _HotRoute('桂林阳朔山水', 1600, 7200, 85.0, 400, 180, 1),
         ]);
         break;
     }
@@ -210,25 +196,21 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-
     return Column(
       children: [
-        // ===== 顶部栏：场景切换 + 天气 =====
         _buildTopBar(),
-        // ===== 可滚动内容区 =====
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.only(bottom: AppConfig.bottomNavHeight + bottomPadding + 24),
             child: Column(
               children: [
-                const SizedBox(height: 8),
-                // ===== 品牌标识 =====
+                // 3.2 品牌标识区
                 _buildBrand(),
                 const SizedBox(height: AppConfig.sectionGap),
-                // ===== 功能入口 =====
+                // 3.3 功能入口区
                 _buildFunctionArea(),
                 const SizedBox(height: AppConfig.sectionGap),
-                // ===== 热门路线 =====
+                // 3.4 热门路线区
                 _buildHotRoutes(),
               ],
             ),
@@ -238,26 +220,28 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  // ==================== 顶部栏 ====================
+  // ==================== 3.1 顶部操作栏 ====================
   Widget _buildTopBar() {
     return Container(
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       decoration: const BoxDecoration(
         color: AppConfig.glassBg,
         border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
       ),
-      child: Row(
-        children: [
-          // 场景下拉
-          CompositedTransformTarget(
-            link: _sceneLayer,
-            child: GestureDetector(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+        child: Row(
+          children: [
+            // 场景下拉
+            GestureDetector(
               onTap: _toggleScenePopup,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('$_sceneEmoji $_sceneLabel', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                  Text(
+                    '$_sceneEmoji $_sceneLabel',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary),
+                  ),
                   const SizedBox(width: 4),
                   AnimatedRotation(
                     turns: _sceneDropdownOpen ? 0.5 : 0,
@@ -267,60 +251,71 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
-          ),
-          const Spacer(),
-          // 天气快览
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _WeatherPage())),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_weatherIcon, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 6),
-                Text(
-                  '${_temperature}°',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$_windLevel级风',
-                  style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary),
-                ),
-              ],
+            const Spacer(),
+            // 全局搜索
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/search'),
+              child: const Icon(Icons.search, size: 20, color: AppConfig.textSecondary),
             ),
+            const SizedBox(width: 16),
+            // 天气快览
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _WeatherPage())),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_weatherIcon, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${_temperature}°',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_windLevel}级风',
+                    style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================== 3.2 品牌标识区 ====================
+  Widget _buildBrand() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        children: [
+          const Text(
+            '去野',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppConfig.textPrimary, letterSpacing: 3),
           ),
+          const SizedBox(height: 4),
+          const Text('出行决策', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)),
         ],
       ),
     );
   }
 
-  // ==================== 品牌标识 ====================
-  Widget _buildBrand() {
-    return Column(
-      children: [
-        Text(
-          AppConfig.appName,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppConfig.textPrimary, letterSpacing: 2),
-        ),
-        const SizedBox(height: 4),
-        const Text('出行决策', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)),
-      ],
-    );
-  }
-
-  // ==================== 功能入口（三图标） ====================
+  // ==================== 3.3 功能入口区 ====================
   Widget _buildFunctionArea() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Row(
         children: [
-          _buildFuncIcon('路线规划', Icons.route_outlined, AppConfig.cyclePrimary, () {
+          _buildFuncCard('路线规划', Icons.route_outlined, () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage()));
           }),
-          _buildFuncIcon('轨迹记录', Icons.timeline_outlined, AppConfig.drivePrimary, () {
+          const SizedBox(width: 8),
+          _buildFuncCard('轨迹记录', Icons.timeline_outlined, () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
           }),
-          _buildFuncIcon('装备清单', Icons.checklist_outlined, AppConfig.motoPrimary, () {
+          const SizedBox(width: 8),
+          _buildFuncCard('装备清单', Icons.checklist_outlined, () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const ChecklistPage()));
           }),
         ],
@@ -328,28 +323,48 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _buildFuncIcon(String label, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildFuncCard(String label, IconData icon, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: AppConfig.cardIconSize, color: color),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-          ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: AppConfig.cardBg,
+            borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
+            boxShadow: AppConfig.cardShadow,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 图标圆形背景
+              Container(
+                width: AppConfig.funcCircleSize,
+                height: AppConfig.funcCircleSize,
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: AppConfig.funcIconSize, color: _primaryColor),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ==================== 热门路线 ====================
+  // ==================== 3.4 热门路线区 ====================
   Widget _buildHotRoutes() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 分隔符
+        // 标题行
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
           child: Row(
@@ -357,30 +372,25 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               Expanded(
                 child: Row(
                   children: [
-                    Container(width: 20, height: 1, color: AppConfig.textSecondary.withOpacity(0.3)),
-                    const SizedBox(width: 8),
-                    const Text('热门路线', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-                    const SizedBox(width: 8),
+                    Container(width: 24, height: 1, color: AppConfig.textSecondary.withOpacity(0.25)),
+                    const SizedBox(width: 10),
+                    const Text('热门路线', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)),
+                    const SizedBox(width: 10),
                     Expanded(child: Container(height: 1, color: AppConfig.textSecondary.withOpacity(0.15))),
                   ],
                 ),
               ),
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage())),
-                child: Text(
-                  '查看全部 >',
-                  style: TextStyle(fontSize: 12, color: AppConfig.textSecondary.withOpacity(0.5)),
-                ),
+                child: const Text('查看全部 >', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppConfig.cardGap),
         // 路线卡片列表
         ..._hotRoutes.asMap().entries.map((e) {
-          final route = e.value;
-          final isLast = e.key == _hotRoutes.length - 1;
-          return _buildRouteCard(route, isLast: isLast);
+          return _buildRouteCard(e.value, isLast: e.key == _hotRoutes.length - 1);
         }),
       ],
     );
@@ -392,10 +402,11 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: Material(
         color: AppConfig.cardBg,
         borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+        elevation: 0,
+        shadowColor: Colors.black.withOpacity(0.06),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppConfig.cardRadius),
           onTap: () {
-            // 转为 RouteModel 并跳转详情
             final model = RouteModel(
               id: 'hot_${route.name.hashCode}',
               name: route.name,
@@ -407,8 +418,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             );
             Navigator.push(context, MaterialPageRoute(builder: (_) => _RouteDetailStub(route: model)));
           },
-          child: Padding(
+          child: Container(
             padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppConfig.cardRadius),
+              boxShadow: AppConfig.cardShadow,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -416,9 +431,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 路线名称
-                      Text(route.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+                      Text(
+                        route.name,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
+                      ),
                       const SizedBox(height: 6),
-                      // 点赞 + 走过人数
+                      // 点赞 + 走过
                       Row(
                         children: [
                           const Icon(Icons.thumb_up_outlined, size: 13, color: AppConfig.textSecondary),
@@ -433,8 +451,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                       const SizedBox(height: 6),
                       // 距离·爬升·用时
                       Text(
-                        '${route.distanceKm.toStringAsFixed(1)}km · ↑${route.climb}m · ${route.duration}',
-                        style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary),
+                        '${route.distanceKm.toStringAsFixed(1)}km · ↑${route.climb}m · ${_durStr(route.durationMinutes)}',
+                        style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary),
                       ),
                     ],
                   ),
@@ -445,7 +463,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: _primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppConfig.tagRadius),
                   ),
                   child: Text(
                     _difficultyLabel(route.difficulty),
@@ -453,6 +471,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
                 const SizedBox(width: 8),
+                // 收藏 + 箭头
+                const Icon(Icons.star_outline_rounded, size: 18, color: AppConfig.textSecondary),
+                const SizedBox(width: 2),
                 const Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary),
               ],
             ),
@@ -462,20 +483,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  String _difficultyLabel(int d) {
-    switch (d) {
-      case 1: return '新手';
-      case 2: return '入门';
-      case 3: return '进阶';
-      case 4: return '困难';
-      case 5: return '资深';
-      default: return '未知';
+  String _durStr(int minutes) {
+    if (minutes >= 24 * 60) return '${(minutes / (24 * 60)).round()}天';
+    if (minutes >= 60) {
+      final h = minutes ~/ 60;
+      final m = minutes % 60;
+      return m > 0 ? '${h}h${m}min' : '${h}h';
     }
+    return '${minutes}min';
+  }
+
+  String _difficultyLabel(int d) {
+    const map = {1: '新手', 2: '入门', 3: '进阶', 4: '困难', 5: '资深'};
+    return map[d] ?? '未知';
   }
 }
 
 // ============================================================
-// 热门路线数据类
+// 热门路线数据
 // ============================================================
 class _HotRoute {
   final String name;
@@ -483,29 +508,14 @@ class _HotRoute {
   final int walkers;
   final double distanceKm;
   final int climb;
-  final String duration;
+  final int durationMinutes;
   final int difficulty;
 
-  const _HotRoute(this.name, this.likes, this.walkers, this.distanceKm, this.climb, this.duration, this.difficulty);
-
-  int get durationMinutes {
-    if (duration.endsWith('天')) {
-      final d = int.tryParse(duration.replaceAll('天', '')) ?? 1;
-      return d * 24 * 60;
-    }
-    if (duration.endsWith('min')) {
-      return int.tryParse(duration.replaceAll('min', '')) ?? 60;
-    }
-    // format: 'Xh' or 'XhYmin'
-    final parts = duration.split('h');
-    final h = int.tryParse(parts[0]) ?? 1;
-    final m = parts.length > 1 ? (int.tryParse(parts[1].replaceAll('min', '')) ?? 0) : 0;
-    return h * 60 + m;
-  }
+  const _HotRoute(this.name, this.likes, this.walkers, this.distanceKm, this.climb, this.durationMinutes, this.difficulty);
 }
 
 // ============================================================
-// 天气详情页（Stub）
+// 天气详情页
 // ============================================================
 class _WeatherPage extends StatelessWidget {
   @override
@@ -516,9 +526,9 @@ class _WeatherPage extends StatelessWidget {
         padding: const EdgeInsets.all(AppConfig.pageMargin),
         children: [
           _weatherCard('今天', '☀️', 24, 15, '晴', 2),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppConfig.cardGap),
           _weatherCard('明天', '⛅', 22, 14, '多云', 3),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppConfig.cardGap),
           _weatherCard('后天', '🌧️', 18, 12, '小雨', 4),
           const SizedBox(height: AppConfig.sectionGap),
           Container(
@@ -579,7 +589,7 @@ class _WeatherPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('$desc  $wind级风', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+                Text('$desc  ${wind}级风', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
               ],
             ),
           ),
@@ -590,7 +600,7 @@ class _WeatherPage extends StatelessWidget {
 }
 
 // ============================================================
-// 路线详情 Stub（点击热门路线卡片跳转）
+// 路线详情 Stub
 // ============================================================
 class _RouteDetailStub extends StatelessWidget {
   final RouteModel route;

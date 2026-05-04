@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 
-/// 去野 - 应用主题（Material 3 亮色）
+/// 去野 - 应用主题 V5.0 (Material 3 亮色)
 class AppTheme {
   AppTheme._();
 
@@ -17,24 +17,24 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppConfig.bgMain,
 
-      // ===== 字体 =====
+      // ===== 字体 V5.0 =====
       fontFamily: AppConfig.fontFamily,
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
-          fontSize: 28, fontWeight: FontWeight.w700,
+          fontSize: 24, fontWeight: FontWeight.w700,
           color: AppConfig.textPrimary, letterSpacing: -0.5,
         ),
         headlineMedium: TextStyle(
-          fontSize: 20, fontWeight: FontWeight.w700,
-          color: AppConfig.textPrimary,
-        ),
-        titleMedium: TextStyle(
           fontSize: 18, fontWeight: FontWeight.w700,
           color: AppConfig.textPrimary,
         ),
-        bodyLarge: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w400,
+        titleMedium: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w700,
           color: AppConfig.textPrimary,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w400,
+          color: AppConfig.textPrimary, height: 1.6,
         ),
         bodyMedium: TextStyle(
           fontSize: 14, fontWeight: FontWeight.w400,
@@ -46,13 +46,12 @@ class AppTheme {
         ),
       ),
 
-      // ===== 卡片 =====
+      // ===== 卡片 V5.0 =====
       cardTheme: CardTheme(
         color: AppConfig.cardBg,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-          side: const BorderSide(color: AppConfig.divider, width: 0.5),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -119,14 +118,14 @@ class AppTheme {
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+        selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
       ),
     );
   }
 }
 
-/// 毛玻璃容器（辅助 widget）
+/// 毛玻璃容器
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
