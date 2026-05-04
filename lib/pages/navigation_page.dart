@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../config/scenario_config.dart';
 import '../config/app_config.dart';
+import '../providers/trip_provider.dart';
 import '../services/tracking_service.dart';
 import '../services/voice_service.dart';
 import '../services/location_service.dart';
+import 'track_end_page.dart';
 
 class NavigationPage extends StatefulWidget {
   final OutdoorScenario scenario;
@@ -48,8 +51,29 @@ class _NavigationPageState extends State<NavigationPage> {
   }
 
   void _endNavigation() {
+    final dist = _tracking.currentDistance;
+    final startTime = _tracking.currentRoute?.startTime ?? DateTime.now();
+    final durSec = DateTime.now().difference(startTime).inSeconds;
     _tracking.stopTracking();
-    Navigator.of(context).pop();
+
+    final prov = context.read<TripProvider>();
+    // Complete active trip if exists
+    if (prov.activeTrip != null) {
+      prov.completeTrip(finalDistanceKm: dist, finalDurationSec: durSec);
+    } else {
+      // Create & complete for free-recording mode
+      prov.createTrip('自由记录', widget.scenario);
+      prov.completeTrip(finalDistanceKm: dist, finalDurationSec: durSec);
+    }
+
+    final completed = prov.completedTrips.isNotEmpty ? prov.completedTrips.first : null;
+    if (completed != null && mounted) {
+      Navigator.pushReplacement(context, MaterialPageRoute(
+        builder: (_) => TrackEndPage(trip: completed),
+      ));
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   void _showSOS() {
