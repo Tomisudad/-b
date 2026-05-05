@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import 'offline_maps_page.dart';
 
-/// V5.0 我的页面 — 个人卡片 + 两列网格 + 设置列表
+/// V5.1 我的页面 — 个人卡片 + 两列网格入口 + 设置列表
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -28,13 +28,10 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         children: [
           _buildHeader(context),
-          // 个人信息卡片
           _buildProfileCard(),
           const SizedBox(height: AppConfig.sectionGap),
-          // 功能入口两列网格
           _buildMenuGrid(),
           const SizedBox(height: AppConfig.sectionGap),
-          // 设置列表
           _buildSettings(context),
           const SizedBox(height: AppConfig.pageMargin),
         ],
@@ -49,23 +46,19 @@ class _ProfilePageState extends State<ProfilePage> {
         color: AppConfig.glassBg,
         border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin, vertical: 10),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: AppConfig.pageMargin, vertical: 10),
         child: Row(
           children: [
-            const Text('我的', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('打开设置'))),
-              child: const Icon(Icons.settings_outlined, size: 22, color: AppConfig.textSecondary),
-            ),
+            Text('我的', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+            Spacer(),
           ],
         ),
       ),
     );
   }
 
-  // ==================== 个人信息卡片 ====================
+  // ==================== 个人信息卡片 (V5.1: 头像48px) ====================
   Widget _buildProfileCard() {
     return Padding(
       padding: const EdgeInsets.all(AppConfig.pageMargin),
@@ -79,26 +72,27 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             Row(
               children: [
+                // 头像 48px
                 Container(
-                  width: 64, height: 64,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                   ),
                   child: const CircleAvatar(
-                    radius: 30,
+                    radius: 22,
                     backgroundColor: AppConfig.goldStart,
-                    child: Text('S', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: AppConfig.textInverse)),
+                    child: Text('S', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppConfig.textInverse)),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(_nickname, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppConfig.textInverse)),
+                          Text(_nickname, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textInverse)),
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -115,7 +109,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, size: 20, color: AppConfig.textInverse.withOpacity(0.6)),
+                // 编辑入口
+                const Icon(Icons.chevron_right, size: 20, color: AppConfig.textInverse),
               ],
             ),
             const SizedBox(height: 20),
@@ -146,15 +141,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ==================== 功能入口两列网格 ====================
+  // ==================== V5.1 功能入口两列网格 ====================
   Widget _buildMenuGrid() {
     final entries = [
-      _MenuEntry('📝', '我的轨迹', '$_trackCount条', Icons.timeline_outlined, AppConfig.cyclePrimary),
-      _MenuEntry('⭐', '我的收藏', '$_favCount条', Icons.star_outlined, AppConfig.goldEnd),
-      _MenuEntry('🏅', '我的勋章', '$_medalCount枚', Icons.emoji_events_outlined, AppConfig.goldStart),
-      _MenuEntry('🗺️', '我的地图', '$_litDistricts区县', Icons.map_outlined, AppConfig.drivePrimary),
-      _MenuEntry('📊', '我的创作', '', Icons.edit_note_outlined, AppConfig.motoPrimary),
-      _MenuEntry('📈', '年度报告', '', Icons.bar_chart_outlined, AppConfig.cyclePrimary),
+      _MenuEntry('📝', '我的轨迹', '$_trackCount条', AppConfig.cyclePrimary),
+      _MenuEntry('⭐', '我的收藏', '$_favCount条', AppConfig.goldEnd),
+      _MenuEntry('🏅', '我的勋章', '$_medalCount枚', AppConfig.goldStart),
+      _MenuEntry('🗺️', '我的地图', '$_litDistricts区县', AppConfig.drivePrimary),
+      _MenuEntry('📂', '我的创作', '→', AppConfig.motoPrimary),
+      _MenuEntry('📊', '年度报告', '→', AppConfig.cyclePrimary),
     ];
 
     return Padding(
@@ -186,34 +181,34 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 40, height: 40,
+              width: 38, height: 38,
               decoration: BoxDecoration(
                 color: e.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: 20))),
+              child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: 18))),
             ),
             const SizedBox(height: 12),
             Text(e.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-            if (e.subtitle.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(e.subtitle, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-            ],
+            const SizedBox(height: 2),
+            Text(e.subtitle, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
           ],
         ),
       ),
     );
   }
 
-  // ==================== 设置列表 ====================
+  // ==================== V5.1 设置列表 ====================
   Widget _buildSettings(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('设置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text('设置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+          ),
           Container(
             decoration: BoxDecoration(
               color: AppConfig.cardBg,
@@ -236,7 +231,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const Divider(height: 1, indent: 52),
                 _settingItem(Icons.storage_outlined, '缓存管理', trailing: '128MB'),
                 const Divider(height: 1, indent: 52),
-                _settingItem(Icons.info_outline, '关于去野', trailing: 'v5.0.0'),
+                _settingItem(Icons.info_outline, '关于去野', trailing: 'v5.1.0'),
               ],
             ),
           ),
@@ -248,18 +243,14 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _settingItem(IconData icon, String title, {String? trailing, VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: const BorderRadius.all(Radius.circular(0)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Icon(icon, size: 20, color: AppConfig.textPrimary),
             const SizedBox(width: 14),
-            Expanded(
-              child: Text(title, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary)),
-            ),
-            if (trailing != null)
-              Text(trailing, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+            Expanded(child: Text(title, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
+            if (trailing != null) Text(trailing, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
             const SizedBox(width: 4),
             Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary.withOpacity(0.4)),
           ],
@@ -273,8 +264,7 @@ class _MenuEntry {
   final String emoji;
   final String title;
   final String subtitle;
-  final IconData icon;
   final Color color;
 
-  const _MenuEntry(this.emoji, this.title, this.subtitle, this.icon, this.color);
+  const _MenuEntry(this.emoji, this.title, this.subtitle, this.color);
 }

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
 import 'pages/home_page.dart';
@@ -7,10 +7,9 @@ import 'pages/partner_page.dart';
 import 'pages/community_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/route_library_page.dart';
-import 'pages/checklist_page.dart';
 import 'pages/departure_page.dart';
 
-/// 主框架 - V5.0 5 Tab 底部导航 + 中间金色出发按钮 + 出发方式选择面板
+/// V5.1 5 Tab 底部导航 + 中间金色 ╋ 按钮 + 三选项出发面板 + bg 缩放动画
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -20,6 +19,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  double _bgScale = 1.0;
 
   static const _labels = ['首页', '搭子', '', '社区', '我的'];
   static const _icons = [
@@ -46,12 +46,17 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _showDeparturePanel() {
+    // 背景缩小 + 半透明遮罩
+    setState(() => _bgScale = 0.95);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: false,
       builder: (_) => const _DepartureSheet(),
-    );
+    ).then((_) {
+      if (mounted) setState(() => _bgScale = 1.0);
+    });
   }
 
   @override
@@ -59,17 +64,41 @@ class _MainShellState extends State<MainShell> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          HomePage(),
-          PartnerPage(),
-          SizedBox.shrink(),
-          CommunityPage(),
-          ProfilePage(),
+      body: Stack(
+        children: [
+          // 主内容 — 面板弹出时缩小
+          AnimatedScale(
+            scale: _bgScale,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: _bgScale < 1.0 ? 0.6 : 1.0,
+              duration: const Duration(milliseconds: 350),
+              child: IndexedStack(
+                index: _currentIndex,
+                children: const [
+                  HomePage(),
+                  PartnerPage(),
+                  SizedBox.shrink(),
+                  CommunityPage(),
+                  ProfilePage(),
+                ],
+              ),
+            ),
+          ),
+          // 半透明遮罩
+          if (_bgScale < 1.0)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                behavior: HitTestBehavior.opaque,
+                child: Container(color: Colors.black.withOpacity(0.35)),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(bottomPadding),
+      extendBody: true,
     );
   }
 
@@ -83,9 +112,9 @@ class _MainShellState extends State<MainShell> {
             filter: ImageFilter.blur(sigmaX: AppConfig.glassBlur, sigmaY: AppConfig.glassBlur),
             child: Container(
               height: AppConfig.bottomNavHeight + bottomPadding,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppConfig.glassBg,
-                border: Border(top: BorderSide(color: AppConfig.divider, width: 0.5)),
+                border: const Border(top: BorderSide(color: AppConfig.divider, width: 0.5)),
               ),
               child: Padding(
                 padding: EdgeInsets.only(bottom: bottomPadding),
@@ -102,7 +131,7 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        // 中间黄金出发按钮 突出 12px
+        // 中间金色 ╋ 按钮 突出 12px
         Positioned(
           top: -AppConfig.centerBtnOffset,
           left: 0,
@@ -110,19 +139,15 @@ class _MainShellState extends State<MainShell> {
           child: Center(
             child: GestureDetector(
               onTap: () => _onTap(2),
-              child: AnimatedScale(
-                scale: _currentIndex == 2 ? AppConfig.pressScale : 1.0,
-                duration: const Duration(milliseconds: 150),
-                child: Container(
-                  width: AppConfig.centerBtnSize,
-                  height: AppConfig.centerBtnSize,
-                  decoration: BoxDecoration(
-                    gradient: goldGradient,
-                    shape: BoxShape.circle,
-                    boxShadow: AppConfig.goldBtnShadow,
-                  ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 28),
+              child: Container(
+                width: AppConfig.centerBtnSize,
+                height: AppConfig.centerBtnSize,
+                decoration: BoxDecoration(
+                  gradient: goldGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: AppConfig.goldBtnShadow,
                 ),
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
               ),
             ),
           ),
@@ -140,21 +165,25 @@ class _MainShellState extends State<MainShell> {
       child: GestureDetector(
         onTap: () => _onTap(index),
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: AppConfig.navIconSize, color: color),
-            const SizedBox(height: 2),
-            Text(
-              _labels[index],
-              style: TextStyle(
-                fontSize: AppConfig.navLabelSize,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: color,
+        child: AnimatedScale(
+          scale: isSelected ? 1.0 : 0.92,
+          duration: const Duration(milliseconds: 200),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: AppConfig.navIconSize, color: color),
+              const SizedBox(height: 2),
+              Text(
+                _labels[index],
+                style: TextStyle(
+                  fontSize: AppConfig.navLabelSize,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -162,7 +191,7 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ============================================================
-// V5.0 出发方式选择面板
+// V5.1 出发面板 — 3 选项 (不再含装备检查)
 // ============================================================
 class _DepartureSheet extends StatelessWidget {
   const _DepartureSheet();
@@ -183,7 +212,7 @@ class _DepartureSheet extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 拖动关闭指示条
+                // 拖动指示条
                 const SizedBox(height: 12),
                 Container(
                   width: 36, height: 4,
@@ -193,41 +222,39 @@ class _DepartureSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+
                 // 标题
                 const Text(
                   '选择出发方式',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
                 ),
                 const SizedBox(height: 20),
-                // 四个选项 — 一次性全展示，不滚动
+
+                // 三个选项 — 一次性全展示
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
                   child: Column(
                     children: [
-                      _buildOption(context, '🗺️', '选择我的路线', '从已规划的路线出发', () {
+                      _buildOption(context, '🗺️', '选择路线出发', '从已规划的路线出发', () {
                         Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage()));
                       }),
                       const SizedBox(height: 8),
-                      _buildOption(context, '✏️', '新建路线规划', '地图打点或导入GPX', () {
+                      _buildOption(context, '✏️', '新建路线并出发', '地图打点或导入GPX', () {
                         Navigator.pop(context);
                         Navigator.pushNamed(context, '/route_plan');
                       }),
                       const SizedBox(height: 8),
-                      _buildOption(context, '▶️', '自由记录开始', '一键开始轨迹记录', () {
+                      _buildOption(context, '▶️', '自由记录直接开始', '不选路线，直接记录', () {
                         Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
-                      }),
-                      const SizedBox(height: 8),
-                      _buildOption(context, '🛠️', '出发前检查装备', '确认装备是否齐全', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ChecklistPage()));
                       }),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                // 关闭按钮
+
+                // 关闭
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
                   child: SizedBox(
@@ -235,7 +262,10 @@ class _DepartureSheet extends StatelessWidget {
                     height: AppConfig.secondaryBtnH,
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('关闭', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textSecondary)),
+                      child: const Text(
+                        '关闭',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textSecondary),
+                      ),
                     ),
                   ),
                 ),
@@ -266,9 +296,7 @@ class _DepartureSheet extends StatelessWidget {
                   color: AppConfig.cyclePrimary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 20)),
-                ),
+                child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
               ),
               const SizedBox(width: 14),
               Expanded(
