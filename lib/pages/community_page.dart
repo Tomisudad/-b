@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
-import '../models/scenario.dart';
 
-/// V5.0 社区页面 - 统一信息流（「全部」/「关注」）
+/// V5.2 社区页面 — 统一信息流（全部/关注），附件自动识别渲染
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
 
@@ -12,501 +11,239 @@ class CommunityPage extends StatefulWidget {
 
 class _CommunityPageState extends State<CommunityPage> {
   bool _showFollowing = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 顶栏
-        _buildHeader(context),
-        // 全部/关注切换
-        _buildTabBar(),
-        // 内容流
-        Expanded(child: _buildFeed()),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-      decoration: const BoxDecoration(
-        color: AppConfig.glassBg,
-        border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin, vertical: 10),
-        child: Row(
-          children: [
-            const Text('社区', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-            const Spacer(),
-            // 发布按钮
-            GestureDetector(
-              onTap: () => _showPublishSheet(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: goldGradient,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, size: 16, color: AppConfig.textInverse),
-                    SizedBox(width: 2),
-                    Text('发布', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppConfig.textInverse)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 8, AppConfig.pageMargin, 4),
-      child: Row(
-        children: [
-          _tabBtn('全部', !_showFollowing),
-          const SizedBox(width: 16),
-          _tabBtn('关注', _showFollowing),
-        ],
-      ),
-    );
-  }
-
-  Widget _tabBtn(String label, bool active) {
-    return GestureDetector(
-      onTap: () => setState(() => _showFollowing = label == '关注'),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-              color: active ? AppConfig.textPrimary : AppConfig.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            width: 20, height: 2,
-            color: active ? AppConfig.cyclePrimary : Colors.transparent,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeed() {
-    final posts = _mockPosts;
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppConfig.pageMargin),
-      itemCount: posts.length,
-      itemBuilder: (ctx, i) => _PostCard(post: posts[i]),
-    );
-  }
-
-  void _showPublishSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _PublishSheetV5(),
-    );
-  }
-}
-
-// ============================================================
-// 帖子卡片
-// ============================================================
-class _PostCard extends StatefulWidget {
-  final _PostV5 post;
-  const _PostCard({required this.post});
-
-  @override
-  State<_PostCard> createState() => _PostCardState();
-}
-
-class _PostCardState extends State<_PostCard> {
-  bool _liked = false;
-  int _likeCount = 0;
-  bool _collected = false;
-  int _collectCount = 0;
+  String _sortBy = 'hot';
+  late List<_Post> _posts;
 
   @override
   void initState() {
     super.initState();
-    _likeCount = widget.post.likes;
-    _collectCount = widget.post.collects;
-    _collected = widget.post.isCollected;
+    _genMockPosts();
+  }
+
+  void _genMockPosts() {
+    _posts = [
+      _Post(postId: 'p1', user: _User('山野行者', 'Lv.12', 128), body: '终于骑完千岛湖绿道全程！68km、三座桥、两个隧道，最后十公里是意志力的对决。风景值回票价 😌', timeAgo: '刚刚', likes: 23, comments: 5, stars: 3, attachments: [
+        _Attach.route('千岛湖绿道全程', '68km · 进阶 · 580m爬升'),
+        _Attach.photo(4),
+      ], tags: ['骑行', '千岛湖']),
+      _Post(postId: 'p2', user: _User('追风骑士', 'Lv.18', 342), body: '皖南川藏线摩旅归来。弯道一个接一个，压弯压到怀疑人生。沿途的竹林和云海，让人忘了速度。推荐给所有摩友 🏍️', timeAgo: '15分钟前', likes: 56, comments: 12, stars: 8, attachments: [
+        _Attach.route('皖南川藏线', '120km · 困难 · 2200m爬升'),
+        _Attach.track('轨迹记录 · 4.2h'),
+        _Attach.photo(6),
+      ], tags: ['摩旅', '皖南']),
+      _Post(postId: 'p3', user: _User('户外老炮', 'Lv.35', 1204), body: '青海大环线第六次走了。这次带新人，讲一下必经的坑：1) 茶卡盐湖下午去拍不到镜面，必须日出 2) 大柴旦翡翠湖别开车进去 3) 敦煌鸣沙山买鞋套不如光脚。详细路书在主页。', timeAgo: '1小时前', likes: 189, comments: 34, stars: 52, attachments: [
+        _Attach.route('青海甘肃大环线', '1800km · 资深 · 6500m爬升'),
+        _Attach.gear('自驾露营装备清单', '11项装备'),
+      ], tags: ['自驾', '西北', '攻略']),
+      _Post(postId: 'p4', user: _User('骑行小白', 'Lv.5', 18), body: '第一次骑长途，龙井爬坡记录。老哥们帮我看看这速度正常吗？感觉坡上去腿已经不是自己的了 😂', timeAgo: '2小时前', likes: 12, comments: 28, stars: 1, attachments: [
+        _Attach.track('8.4km · 310m爬升 · 0.9h'),
+      ], tags: ['骑行', '新手', '杭州']),
+      _Post(postId: 'p5', user: _User('路书达人', 'Lv.22', 560), body: '【太行天路详解】全长95km，翻越三个山口，难度不高但风景绝了。附：最佳季节、补给点、住宿推荐。', timeAgo: '3小时前', likes: 78, comments: 22, stars: 35, attachments: [
+        _Attach.route('太行天路', '95km · 进阶 · 1800m爬升'),
+      ], tags: ['摩旅', '太行山', '路书']),
+      _Post(postId: 'p6', user: _User('露营日记', 'Lv.10', 89), body: '德清莫干山下的新露营地，有水电有厕所，晚上能看到银河。🌌', timeAgo: '昨天', likes: 45, comments: 8, stars: 12, attachments: [
+        _Attach.photo(3),
+        _Attach.gear('自驾露营装备', '11项装备'),
+      ], tags: ['露营', '自驾', '浙江']),
+      _Post(postId: 'p7', user: _User('远方行者', 'Lv.15', 215), body: '独库公路今年6月1日全线开通。去年开了一半被封路，今年要补上后半段。有没有一起的？', timeAgo: '昨天', likes: 67, comments: 18, stars: 14, attachments: [
+        _Attach.route('独库公路全程', '561km · 困难 · 3800m爬升'),
+      ], tags: ['自驾', '新疆', '组队']),
+      _Post(postId: 'p8', user: _User('装备党', 'Lv.20', 340), body: '新入手了一套骑行装备，用了一周来反馈：头盔够用但透气性一般；手套强烈推荐，长时间握把不酸。', timeAgo: '前天', likes: 92, comments: 15, stars: 18, attachments: [
+        _Attach.gear('骑行基础装备', '12项装备'),
+      ], tags: ['装备', '骑行', '评测']),
+    ];
+  }
+
+  List<_Post> get _sortedPosts {
+    var list = _posts.toList();
+    if (_sortBy == 'hot') {
+      list.sort((a, b) => b._hotScore.compareTo(a._hotScore));
+    }
+    return list;
   }
 
   @override
   Widget build(BuildContext context) {
-    final post = widget.post;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppConfig.cardGap),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppConfig.cardBg,
-          borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-          boxShadow: AppConfig.cardShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 用户行
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppConfig.cyclePrimary.withOpacity(0.1),
-                  child: Text(post.author[0], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppConfig.cyclePrimary)),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(post.author, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-                          if (post.scenario != null) ...[
-                            const SizedBox(width: 6),
-                            _scenarioTag(post.scenario!),
-                          ],
-                        ],
-                      ),
-                      Text(post.timeAgo, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _collected = !_collected),
-                  child: Icon(
-                    _collected ? Icons.star_rounded : Icons.star_outline_rounded,
-                    size: 18, color: _collected ? AppConfig.goldEnd : AppConfig.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            // 正文
-            if (post.text.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(post.text, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary, height: 1.6), maxLines: 6, overflow: TextOverflow.ellipsis),
-            ],
-            // 附件渲染
-            if (post.attachments.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              ...post.attachments.map((a) => _renderAttachment(a)),
-            ],
-            const SizedBox(height: 12),
-            // 互动栏
-            Row(
-              children: [
-                _actionBtn(Icons.thumb_up_outlined, Icons.thumb_up, _likeCount, _liked, AppConfig.cyclePrimary, () {
-                  setState(() { _liked = !_liked; _likeCount += _liked ? 1 : -1; });
-                }),
-                const Spacer(),
-                _actionBtn(Icons.chat_bubble_outline, Icons.chat_bubble, post.comments, false, AppConfig.textSecondary, () {}),
-                const Spacer(),
-                _actionBtn(Icons.star_outline_rounded, Icons.star_rounded, _collectCount, _collected, AppConfig.goldEnd, () {
-                  setState(() { _collected = !_collected; _collectCount += _collected ? 1 : -1; });
-                }),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已复制分享链接'))),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.share_outlined, size: 16, color: AppConfig.textSecondary),
-                      SizedBox(width: 4),
-                      Text('转发', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _scenarioTag(OutdoorScenario s) {
-    final c = s == OutdoorScenario.cycle ? AppConfig.cyclePrimary
-        : s == OutdoorScenario.moto ? AppConfig.motoPrimary : AppConfig.drivePrimary;
-    final l = s == OutdoorScenario.cycle ? '骑行' : s == OutdoorScenario.moto ? '摩旅' : '自驾';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: c.withOpacity(0.08), borderRadius: BorderRadius.circular(4)),
-      child: Text(l, style: TextStyle(fontSize: 9, color: c)),
-    );
-  }
-
-  Widget _renderAttachment(_Attachment a) {
-    switch (a.type) {
-      case _AttachType.route:
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
-          child: Row(
-            children: [
-              const Icon(Icons.route_outlined, size: 18, color: AppConfig.cyclePrimary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(a.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppConfig.cyclePrimary))),
-              Text(a.subtitle ?? '', style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-            ],
+    final posts = _sortedPosts;
+    return Scaffold(
+      backgroundColor: AppConfig.bgMain,
+      appBar: AppBar(
+        title: const Text('社区', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() => _sortBy = _sortBy == 'hot' ? 'new' : 'hot'),
+            child: Text(_sortBy == 'hot' ? '热度' : '最新', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
           ),
-        );
-      case _AttachType.gear:
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
-          child: Row(
-            children: [
-              const Icon(Icons.backpack_outlined, size: 18, color: AppConfig.motoPrimary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(a.title, style: const TextStyle(fontSize: 13, color: AppConfig.motoPrimary))),
-              Text('查看清单 >', style: TextStyle(fontSize: 11, color: AppConfig.textSecondary.withOpacity(0.6))),
-            ],
-          ),
-        );
-      case _AttachType.track:
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8)),
-          child: Row(
-            children: [
-              const Icon(Icons.timeline_outlined, size: 18, color: AppConfig.drivePrimary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(a.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppConfig.textPrimary))),
-              if (a.subtitle != null)
-                Text(a.subtitle!, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-            ],
-          ),
-        );
-      case _AttachType.photo:
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 160,
-            color: AppConfig.bgMain,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.image_outlined, size: 40, color: AppConfig.textSecondary),
-                  const SizedBox(height: 8),
-                  Text(a.title, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-                  if (a.subtitle != null)
-                    Text(a.subtitle!, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-                ],
-              ),
-            ),
-          ),
-        );
-      case _AttachType.medal:
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [AppConfig.goldStart.withOpacity(0.15), AppConfig.goldEnd.withOpacity(0.05)]),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              const Text('🏅', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 10),
-              Expanded(child: Text(a.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.goldEnd))),
-              if (a.subtitle != null) Text(a.subtitle!, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-            ],
-          ),
-        );
-    }
-  }
-
-  Widget _actionBtn(IconData off, IconData on, int count, bool active, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(active ? on : off, size: 16, color: active ? color : AppConfig.textSecondary),
-          const SizedBox(width: 4),
-          Text('$count', style: TextStyle(fontSize: 12, color: active ? color : AppConfig.textSecondary)),
         ],
       ),
-    );
-  }
-}
-
-// ============================================================
-// 发布面板 V5.0 (不选类型，附件自动渲染)
-// ============================================================
-class _PublishSheetV5 extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-      decoration: const BoxDecoration(
-        color: AppConfig.cardBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppConfig.dialogRadius)),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(color: AppConfig.textSecondary.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
-            ),
-            const SizedBox(height: 16),
-            const Text('发布内容', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-            const SizedBox(height: 20),
-            // 附件选择 — 不选类型，选附件
-            Padding(
+      body: Column(
+        children: [
+          _buildTabs(),
+          Expanded(
+            child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _attBtn('🖼️', '照片'),
-                  _attBtn('🗺️', '路线'),
-                  _attBtn('🛠️', '装备'),
-                  _attBtn('📝', '轨迹'),
-                  _attBtn('🏅', '勋章'),
-                ],
-              ),
+              itemCount: posts.length,
+              separatorBuilder: (_, __) => const SizedBox(height: AppConfig.cardGap),
+              itemBuilder: (_, i) => _buildPostCard(posts[i]),
             ),
-            const SizedBox(height: 20),
-            // 发布
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
-              child: SizedBox(
-                width: double.infinity,
-                height: AppConfig.primaryBtnH,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    gradient: goldGradient,
-                    borderRadius: BorderRadius.all(Radius.circular(AppConfig.buttonRadius)),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('发布成功！')));
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
-                    child: const Text('发布', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textInverse)),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _attBtn(String emoji, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 48, height: 48,
-          decoration: BoxDecoration(
-            color: AppConfig.bgMain,
-            borderRadius: BorderRadius.circular(12),
           ),
-          child: Center(child: Text(emoji, style: const TextStyle(fontSize: 22))),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
-      ],
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: () => _showPublishSheet(context),
+        backgroundColor: AppConfig.goldStart,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
+  }
+
+  Widget _buildTabs() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, 10),
+      child: Row(children: [
+        _tabBtn('全部', !_showFollowing, () => setState(() => _showFollowing = false)),
+        const SizedBox(width: 8),
+        _tabBtn('关注', _showFollowing, () => setState(() => _showFollowing = true)),
+      ]),
+    );
+  }
+
+  Widget _tabBtn(String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? AppConfig.goldStart.withOpacity(0.1) : AppConfig.cardBg,
+          borderRadius: BorderRadius.circular(AppConfig.tagRadius),
+          border: Border.all(color: active ? AppConfig.goldStart : AppConfig.divider, width: active ? 1.2 : 0.8),
+        ),
+        child: Text(label, style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w600 : FontWeight.w400, color: active ? AppConfig.goldStart : AppConfig.textSecondary)),
+      ),
+    );
+  }
+
+  Widget _buildPostCard(_Post post) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(width: 36, height: 36, decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFFF0C040), Color(0xFFE67E22)]), borderRadius: BorderRadius.circular(18)), child: Center(child: Text(post.user.name[0], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)))),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [Text(post.user.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)), const SizedBox(width: 6), Text(post.user.level, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary))]),
+            Text(post.timeAgo, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
+          ])),
+        ]),
+        const SizedBox(height: 10),
+        Text(post.body, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary, height: 1.6)),
+        if (post.tags.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(spacing: 4, runSpacing: 4, children: post.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppConfig.goldStart.withOpacity(0.06), borderRadius: BorderRadius.circular(4)), child: Text('#$t', style: const TextStyle(fontSize: 11, color: AppConfig.goldStart)))).toList()),
+        ],
+        if (post.attachments.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          ...post.attachments.map((att) => _buildAttachment(att)),
+        ],
+        const SizedBox(height: 10),
+        Row(children: [
+          _actionBtn(Icons.favorite_border, '${post.likes}', () => setState(() => post.likes++)),
+          const SizedBox(width: 20),
+          _actionBtn(Icons.chat_bubble_outline, '${post.comments}', () {}),
+          const Spacer(),
+          _actionBtn(Icons.star_border, '${post.stars}', () {}),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildAttachment(_Attach att) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppConfig.divider)),
+      child: Row(children: [
+        Icon(att.icon, size: 18, color: att.color),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(att.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+          if (att.sub != null) Text(att.sub!, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
+        ])),
+        const Icon(Icons.chevron_right, size: 16, color: AppConfig.textSecondary),
+      ]),
+    );
+  }
+
+  Widget _actionBtn(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(onTap: onTap, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 18, color: AppConfig.textSecondary), const SizedBox(width: 3), Text(label, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary))]));
+  }
+
+  void _showPublishSheet(BuildContext context) {
+    final controller = TextEditingController();
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.vertical(top: Radius.circular(AppConfig.dialogRadius))),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SafeArea(child: Padding(
+          padding: const EdgeInsets.all(AppConfig.pageMargin),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 32, height: 4, decoration: BoxDecoration(color: AppConfig.divider, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 12),
+            const Text('发布动态', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+            const SizedBox(height: 12),
+            TextField(controller: controller, maxLines: 4, maxLength: 500, decoration: InputDecoration(hintText: '分享你的户外故事...', border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppConfig.cardRadius), borderSide: const BorderSide(color: AppConfig.divider)), contentPadding: const EdgeInsets.all(12))),
+            const SizedBox(height: 8),
+            Row(children: [_pubBtn('关联路线', Icons.route_outlined), const SizedBox(width: 8), _pubBtn('照片', Icons.photo_outlined), const SizedBox(width: 8), _pubBtn('装备', Icons.checklist_outlined)]),
+            const SizedBox(height: 12),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () { if (controller.text.trim().isNotEmpty) { setState(() { _posts.insert(0, _Post(postId: 'p${DateTime.now().millisecondsSinceEpoch}', user: _User('我', 'Lv.12', 128), body: controller.text.trim(), timeAgo: '刚刚', tags: [])); }); Navigator.pop(context); } }, style: ElevatedButton.styleFrom(backgroundColor: AppConfig.goldStart, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)), padding: const EdgeInsets.symmetric(vertical: 14)), child: const Text('发布', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)))),
+          ]),
+        )),
+      ),
+    );
+  }
+
+  Widget _pubBtn(String label, IconData icon) {
+    return OutlinedButton.icon(onPressed: () {}, icon: Icon(icon, size: 14), label: Text(label, style: const TextStyle(fontSize: 11)), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.tagRadius)), side: const BorderSide(color: AppConfig.divider), foregroundColor: AppConfig.textSecondary));
   }
 }
 
-// ============================================================
-// Mock 数据
-// ============================================================
-final _mockPosts = [
-  _PostV5('山野行者', '川西大环线详细路书分享，沿途补给点、住宿推荐和注意事项一应俱全。全程风景绝美！',
-    likes: 128, collects: 54, comments: 23, scenario: OutdoorScenario.moto,
-    attachments: [_Attachment.route('川西大环线', '320km · 5天')]),
-  _PostV5('骑行达人', '',
-    likes: 96, collects: 32, comments: 15, scenario: OutdoorScenario.cycle,
-    attachments: [_Attachment.track('环青海湖', '360km · 4天'), _Attachment.photo('沿途美景合集', '12张')]),
-  _PostV5('装备控', '长途骑行装备清单分享：从车辆到急救包，这些年踩过的坑都在这里。',
-    likes: 56, collects: 78, comments: 9,
-    attachments: [_Attachment.gear('长途骑行装备清单', '32项')]),
-  _PostV5('远方来信', '第一次完成百公里骑行，虽然累但特别有成就感。路上遇到的骑友都很友善，这种体验是城市里感受不到的。',
-    likes: 203, collects: 88, comments: 34, scenario: OutdoorScenario.cycle),
-  _PostV5('越野老王', '独库公路自驾路书v2.0，新增北段详细标注和营地推荐。',
-    likes: 87, collects: 41, comments: 12, scenario: OutdoorScenario.drive,
-    attachments: [_Attachment.route('独库公路全程', '561km · 3天')]),
-  _PostV5('摩旅人生', '周末小跑，发现一条超美的山路，弯道多但路况好！',
-    likes: 58, collects: 15, comments: 7, scenario: OutdoorScenario.moto,
-    attachments: [_Attachment.photo('山路弯道', '1张')]),
-  _PostV5('行者无疆', '',
-    likes: 167, collects: 63, comments: 21, scenario: OutdoorScenario.drive,
-    attachments: [_Attachment.medal('行者无疆', '累计500km'), _Attachment.track('新疆自驾一月', '1800km · 8天')]),
-  _PostV5('露营达人', '摩旅露营装备推荐，轻量化是关键。帐篷选三季帐，睡袋温标要根据季节调整。',
-    likes: 73, collects: 45, comments: 11, scenario: OutdoorScenario.moto,
-    attachments: [_Attachment.gear('摩旅露营装备', '18项')]),
-  _PostV5('川藏老炮', 'G318川藏线摩旅路书10.0版，沿途加油站、维修点、住宿全标注。',
-    likes: 215, collects: 102, comments: 38, scenario: OutdoorScenario.moto,
-    attachments: [_Attachment.route('G318川藏线', '2100km · 12天')]),
-  _PostV5('追风少年', '今天天气真好，骑了三十公里，风吹在脸上的感觉太棒了！☀️',
-    likes: 42, collects: 8, comments: 5, scenario: OutdoorScenario.cycle),
-];
-
-class _PostV5 {
-  final String author;
-  final String text;
-  final int likes;
-  final int collects;
-  final int comments;
-  final OutdoorScenario? scenario;
-  final List<_Attachment> attachments;
-  final bool isCollected;
-  final String timeAgo;
-
-  _PostV5(this.author, this.text, {
-    required this.likes,
-    this.collects = 0,
-    this.comments = 0,
-    this.scenario,
-    this.attachments = const [],
-    this.isCollected = false,
-  }) : timeAgo = _randomTimeAgo(author.hashCode + likes);
-
-  static String _randomTimeAgo(int seed) {
-    const opts = ['刚刚', '5分钟前', '15分钟前', '30分钟前', '1小时前', '2小时前', '3小时前', '昨天', '前天', '3天前'];
-    return opts[seed.abs() % opts.length];
-  }
+class _User {
+  final String name;
+  final String level;
+  final int posts;
+  const _User(this.name, this.level, this.posts);
 }
 
 enum _AttachType { route, gear, track, photo, medal }
 
-class _Attachment {
+class _Attach {
   final _AttachType type;
   final String title;
-  final String? subtitle;
+  final String? sub;
+  const _Attach._(this.type, this.title, this.sub);
+  factory _Attach.route(String t, String s) => _Attach._(_AttachType.route, t, s);
+  factory _Attach.gear(String t, String s) => _Attach._(_AttachType.gear, t, s);
+  factory _Attach.track(String s) => _Attach._(_AttachType.track, '轨迹记录', s);
+  factory _Attach.photo(int n) => _Attach._(_AttachType.photo, '$n张照片', null);
+  factory _Attach.medal(String n, String d) => _Attach._(_AttachType.medal, n, d);
 
-  const _Attachment(this.type, this.title, [this.subtitle]);
+  IconData get icon => switch (type) { _AttachType.route => Icons.route_outlined, _AttachType.gear => Icons.checklist_outlined, _AttachType.track => Icons.timeline_outlined, _AttachType.photo => Icons.photo_outlined, _AttachType.medal => Icons.emoji_events_outlined };
+  Color get color => switch (type) { _AttachType.route => AppConfig.cyclePrimary, _AttachType.gear => AppConfig.drivePrimary, _AttachType.track => AppConfig.motoPrimary, _AttachType.photo => AppConfig.textSecondary, _AttachType.medal => AppConfig.goldStart };
+}
 
-  const _Attachment.route(String title, [String? sub]) : this(_AttachType.route, title, sub);
-  const _Attachment.gear(String title, [String? sub]) : this(_AttachType.gear, title, sub);
-  const _Attachment.track(String title, [String? sub]) : this(_AttachType.track, title, sub);
-  const _Attachment.photo(String title, [String? sub]) : this(_AttachType.photo, title, sub);
-  const _Attachment.medal(String title, [String? sub]) : this(_AttachType.medal, title, sub);
+class _Post {
+  final String postId;
+  final _User user;
+  final String body;
+  final String timeAgo;
+  int likes;
+  int comments;
+  int stars;
+  final List<_Attach> attachments;
+  final List<String> tags;
+
+  _Post({required this.postId, required this.user, required this.body, required this.timeAgo, this.likes = 0, this.comments = 0, this.stars = 0, this.attachments = const [], this.tags = const []});
+  int get _hotScore => likes + comments * 3 + stars * 5;
 }

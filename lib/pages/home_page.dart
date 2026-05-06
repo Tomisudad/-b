@@ -7,8 +7,9 @@ import '../config/scenario_config.dart';
 import '../models/route_model.dart';
 import '../models/scenario.dart';
 import 'route_library_page.dart';
+import 'route_plan_page.dart';
+import 'track_list_page.dart';
 import 'checklist_page.dart';
-import 'departure_page.dart';
 
 /// V5.1 首页 — 出发前决策面板（无地图，带动态视觉效果）
 class HomePage extends StatefulWidget {
@@ -364,15 +365,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: Row(
         children: [
           _buildAnimatedFuncCard('路线规划', Icons.route_outlined, _card1Visible, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage()));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const RoutePlanPage()));
           }),
           const SizedBox(width: 8),
           _buildAnimatedFuncCard('轨迹记录', Icons.timeline_outlined, _card2Visible, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackListPage()));
           }),
           const SizedBox(width: 8),
           _buildAnimatedFuncCard('装备清单', Icons.checklist_outlined, _card3Visible, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ChecklistPage()));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ChecklistPage(initialScene: _scene)));
           }),
         ],
       ),
