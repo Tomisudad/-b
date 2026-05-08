@@ -8,8 +8,10 @@ import 'pages/community_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/route_library_page.dart';
 import 'pages/departure_page.dart';
+import 'services/tracking_service.dart';
+import 'config/scenario_config.dart';
 
-/// V5.1 5 Tab 底部导航 + 中间金色 ╋ 按钮 + 三选项出发面板 + bg 缩放动画
+/// V5.5 5 Tab 底部导航 + 中间金色 ╋ 按钮 + 三选项出发面板 + bg 缩放动画
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -46,7 +48,6 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _showDeparturePanel() {
-    // 背景缩小 + 半透明遮罩
     setState(() => _bgScale = 0.95);
 
     showModalBottomSheet(
@@ -66,7 +67,6 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: Stack(
         children: [
-          // 主内容 — 面板弹出时缩小
           AnimatedScale(
             scale: _bgScale,
             duration: const Duration(milliseconds: 350),
@@ -86,7 +86,6 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
-          // 半透明遮罩
           if (_bgScale < 1.0)
             Positioned.fill(
               child: GestureDetector(
@@ -106,7 +105,6 @@ class _MainShellState extends State<MainShell> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // 毛玻璃底部栏
         ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: AppConfig.glassBlur, sigmaY: AppConfig.glassBlur),
@@ -131,7 +129,6 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        // 中间金色 ╋ 按钮 突出 12px
         Positioned(
           top: -AppConfig.centerBtnOffset,
           left: 0,
@@ -139,7 +136,8 @@ class _MainShellState extends State<MainShell> {
           child: Center(
             child: GestureDetector(
               onTap: () => _onTap(2),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: AppConfig.centerBtnSize,
                 height: AppConfig.centerBtnSize,
                 decoration: BoxDecoration(
@@ -191,7 +189,10 @@ class _MainShellState extends State<MainShell> {
 }
 
 // ============================================================
-// V5.1 出发面板 — 3 选项 (不再含装备检查)
+// V5.5 出发面板 — 3 选项
+//   1) 选择路线出发 → 路线库选线
+//   2) 新建路线并出发 → 完整创建流程
+//   3) 自由记录直接开始 → 立即开始追踪，不弹框
 // ============================================================
 class _DepartureSheet extends StatelessWidget {
   const _DepartureSheet();
@@ -212,7 +213,6 @@ class _DepartureSheet extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 拖动指示条
                 const SizedBox(height: 12),
                 Container(
                   width: 36, height: 4,
@@ -222,15 +222,11 @@ class _DepartureSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // 标题
                 const Text(
                   '选择出发方式',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
                 ),
                 const SizedBox(height: 20),
-
-                // 三个选项 — 一次性全展示
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
                   child: Column(
@@ -242,19 +238,25 @@ class _DepartureSheet extends StatelessWidget {
                       const SizedBox(height: 8),
                       _buildOption(context, '✏️', '新建路线并出发', '地图打点或导入GPX', () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, '/route_plan');
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
                       }),
                       const SizedBox(height: 8),
-                      _buildOption(context, '▶️', '自由记录直接开始', '不选路线，直接记录', () {
+                      _buildOption(context, '▶️', '自由记录直接开始', '不选路线，直接记录轨迹', () {
                         Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
+                        // V5.5: 直接开始追踪，不弹框
+                        TrackingService.instance.startTracking(OutdoorScenario.cycle);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('🎯 轨迹记录已开始'),
+                            backgroundColor: AppConfig.cyclePrimary,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
                       }),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // 关闭
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
                   child: SizedBox(
