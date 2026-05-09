@@ -22,12 +22,13 @@ extension _TravelGoalX on _TravelGoal {
     _TravelGoal.longHaul => '纯长途赶路',
     _TravelGoal.explore => '探索新地方',
   };
+  // V6.1: 挑战铜色 / 风景蓝绿 / 社交暖橙 / 长途深蓝 / 探索紫色
   Color get color => switch (this) {
-    _TravelGoal.challenge => const Color(0xFFE53935),
-    _TravelGoal.scenery => const Color(0xFF2E7D32),
-    _TravelGoal.social => const Color(0xFF7B1FA2),
-    _TravelGoal.longHaul => const Color(0xFF1565C0),
-    _TravelGoal.explore => const Color(0xFFEF6C00),
+    _TravelGoal.challenge => const Color(0xFFB87333),
+    _TravelGoal.scenery => const Color(0xFF0D9488),
+    _TravelGoal.social => const Color(0xFFF97316),
+    _TravelGoal.longHaul => const Color(0xFF1E3A5F),
+    _TravelGoal.explore => const Color(0xFF7C3AED),
   };
   IconData get icon => switch (this) {
     _TravelGoal.challenge => Icons.emoji_events_outlined,
@@ -49,19 +50,13 @@ class _PartnerPageState extends State<PartnerPage> {
   _TravelGoal? _filterGoal;
   bool _mapView = false;
 
+  // V6.1 mock: 5 条精确数据（含时间、成员信息、目标宣言）
   static final List<_Buddy> _buddies = [
-    _Buddy('山野骑客', OutdoorScenario.cycle, 2.3, _Status.inGroup, '环太湖', '周末环湖，休闲骑为主。不求速度求风景。已有2人，缺1人', ['装备齐全', '对讲机'], _TravelGoal.scenery),
-    _Buddy('追风骑士', OutdoorScenario.moto, 5.1, _Status.solo, '皖南川藏线', '弯道控！压弯圣地。求有经验的摩友组队。', ['大排量', '摄影'], _TravelGoal.challenge),
-    _Buddy('远方行者', OutdoorScenario.drive, 8.7, _Status.solo, '青海大环线', '7月底出发，14天。捡1人，全AA。有无人机。', ['无人机', '露营装备'], _TravelGoal.longHaul),
-    _Buddy('骑行小白', OutdoorScenario.cycle, 1.5, _Status.planning, '未定', '新手求带！周末西湖周边随便骑骑。', ['新手', '求带'], _TravelGoal.social),
-    _Buddy('露营达人', OutdoorScenario.drive, 3.2, _Status.inGroup, '德清莫干山', '周六露营，缺个司机。我们带帐篷和食材。', ['帐篷', '厨具'], _TravelGoal.scenery),
-    _Buddy('摩旅老炮', OutdoorScenario.moto, 12.0, _Status.solo, '318川藏线', '6月中旬出发。第三次走了，这次只走精华。', ['氧气瓶', '卫星电话'], _TravelGoal.longHaul),
-    _Buddy('周末骑士', OutdoorScenario.cycle, 0.8, _Status.planning, '未定', '每周六环西湖，固定活动。来了就能跟上。', ['入门车', '头盔'], _TravelGoal.social),
-    _Buddy('西北老司机', OutdoorScenario.drive, 15.3, _Status.solo, '独库公路', '老司机捡人。全程AA，限两人。需有高原经验。', ['氧气', '防滑链'], _TravelGoal.explore),
-    _Buddy('越野爱好者', OutdoorScenario.cycle, 4.5, _Status.inGroup, '午潮山', 'XC路线，有点难度。会等新人但别太太太慢。', ['XC车', '护具'], _TravelGoal.challenge),
-    _Buddy('川西达人', OutdoorScenario.drive, 22.0, _Status.solo, '川西小环线', '秋天出发，摄影为主。找能起早拍日出的。', ['全画幅', '三脚架'], _TravelGoal.scenery),
-    _Buddy('公路车手', OutdoorScenario.cycle, 3.0, _Status.solo, '龙井-梅灵', '每周三晚龙井。35+巡航进来。', ['公路车', '功率计'], _TravelGoal.challenge),
-    _Buddy('家庭出游', OutdoorScenario.drive, 6.0, _Status.planning, '千岛湖', '一家三口，想找另一家结伴。孩子7岁。', ['儿童座椅', '零食'], _TravelGoal.social),
+    _Buddy('周末骑士', OutdoorScenario.cycle, 0.8, _Status.planning, null, '每周六环西湖，固定活动。来了就能跟上。', ['入门车', '头盔'], _TravelGoal.social, time: '周六 7:00', memberInfo: '已有3人'),
+    _Buddy('骑行小白', OutdoorScenario.cycle, 1.5, _Status.planning, null, '新手求带！周末西湖周边随便骑骑。', ['新手', '求带'], _TravelGoal.social, time: '周六 8:30', memberInfo: '独行'),
+    _Buddy('山野骑客', OutdoorScenario.cycle, 2.3, _Status.inGroup, '环太湖', '周末环湖，不求速度求风景。已有2人，缺1人。', ['装备齐全', '对讲机'], _TravelGoal.scenery, time: '周日 6:30', memberInfo: '2/4人'),
+    _Buddy('长途骑士', OutdoorScenario.cycle, 5.0, _Status.planning, '川藏线', '计划下月川藏线，找有经验队友。一起走不孤单。', ['长途', '经验丰富'], _TravelGoal.longHaul, time: '待定', memberInfo: '独行'),
+    _Buddy('爬坡达人', OutdoorScenario.cycle, 3.1, _Status.planning, '龙井北坡', '龙井北坡5趟连爬，找配速相当搭子。心率不过165的勿扰。', ['公路车', '功率计'], _TravelGoal.challenge, time: '周六 5:30', memberInfo: '独行'),
   ];
 
   // V5.5: Sort by goal match > scene match > distance
@@ -206,15 +201,28 @@ class _PartnerPageState extends State<PartnerPage> {
                 Icon(Icons.location_on_outlined, size: 12, color: AppConfig.textSecondary.withOpacity(0.6)),
                 const SizedBox(width: 3),
                 Text('${buddy.distanceKm.toStringAsFixed(1)}km', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                // V6.1: time + member info
+                if (buddy.time.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  const Icon(Icons.access_time, size: 12, color: AppConfig.textSecondary),
+                  const SizedBox(width: 3),
+                  Text(buddy.time, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                ],
+                const SizedBox(width: 10),
+                Text(buddy.memberInfo, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: buddy.memberInfo == '独行' ? AppConfig.textSecondary : AppConfig.goldEnd)),
               ]),
             ])),
             const Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary),
           ]),
           const SizedBox(height: 8),
-          // 目标标签
+          // V6.1: 目标标签（渐变背景 hint）
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: goalColor.withOpacity(0.08), borderRadius: BorderRadius.circular(6), border: Border.all(color: goalColor.withOpacity(0.12))),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [goalColor.withOpacity(0.12), goalColor.withOpacity(0.04)]),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: goalColor.withOpacity(0.15)),
+            ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(buddy.goal.icon, size: 14, color: goalColor),
               const SizedBox(width: 4),
@@ -234,11 +242,20 @@ class _PartnerPageState extends State<PartnerPage> {
             ],
           ]),
           const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: OutlinedButton(onPressed: () {}, style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)), side: const BorderSide(color: AppConfig.divider), foregroundColor: AppConfig.textPrimary), child: const Text('打招呼', style: TextStyle(fontSize: 13)))),
-            const SizedBox(width: 8),
-            Expanded(child: ElevatedButton(onPressed: () => _showBuddyDetail(buddy), style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)), backgroundColor: AppConfig.goldStart, foregroundColor: Colors.white), child: const Text('组队', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))),
-          ]),
+          // V6.1: 合并"打招呼"和"组队"为"申请加入"
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _showBuddyDetail(buddy),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
+                backgroundColor: AppConfig.goldStart,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('申请加入', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+          ),
         ]),
       ),
     );
@@ -435,5 +452,7 @@ class _Buddy {
   final String desc;
   final List<String> tags;
   final _TravelGoal goal;
-  const _Buddy(this.name, this.scene, this.distanceKm, this.status, this.route, this.desc, this.tags, this.goal);
+  final String time;       // V6.1: 出行时间
+  final String memberInfo;  // V6.1: "独行" / "已有3人" / "2/4人"
+  const _Buddy(this.name, this.scene, this.distanceKm, this.status, this.route, this.desc, this.tags, this.goal, {this.time = '', this.memberInfo = '独行'});
 }

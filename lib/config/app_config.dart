@@ -30,11 +30,11 @@ class AppConfig {
 
   // ===== 文字 =====
   static const Color textPrimary   = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF8E8E93);
+  static const Color textSecondary = Color(0xFF9A9A9F);
   static const Color textInverse   = Color(0xFFFFFFFF);
 
   // ===== 分割线 =====
-  static const Color divider = Color(0xFFE8E8ED);
+  static const Color divider = Color(0xFFEDEDED);
 
   // ===== 轨迹线 =====
   static const Color trackGold = Color(0xFFF0C040);
@@ -102,8 +102,17 @@ class AppConfig {
     ),
   ];
 
+  // ===== 卡片按压态 (V6.5 Fix 13) =====
+  static List<BoxShadow> get cardShadowPressed => [
+    BoxShadow(
+      color: const Color(0xFF000000).withOpacity(0.04),
+      blurRadius: 6,
+      offset: const Offset(0, 2),
+    ),
+  ];
+  static const double pressScale = 0.98;
+
   // ===== 交互动画 =====
-  static const double pressScale       = 0.95;
   static const int    animMsDefault    = 200;
   static const int    animMsPageTrans  = 300;
 
@@ -111,7 +120,7 @@ class AppConfig {
   static const double sceneDropItemH = 44.0;
 
   // ===== 最小字号 =====
-  static const double minFontSize = 14.0;
+  static const double minFontSize = 12.0;
 }
 
 // ===== 全局渐变 =====

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -172,38 +173,43 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _startCardAnimations();
   }
 
-  // ===== 热门路线 mock 生成 =====
+  // ===== V6.1 热门路线 mock 生成 (6条, 含图片URL和收藏) =====
   void _genHotRoutes() {
     final routes = <_HotRoute>[];
     switch (_scene) {
       case OutdoorScenario.cycle:
         routes.addAll([
-          _HotRoute('洱海环湖骑行', 1243, 5832, 42.0, 320, 150, 1),
-          _HotRoute('独库公路骑行段', 987, 4102, 58.0, 1200, 240, 3),
-          _HotRoute('太湖东山半岛', 756, 3201, 28.0, 150, 90, 1),
-          _HotRoute('千岛湖绿道全程', 1532, 7200, 68.0, 580, 210, 2),
-          _HotRoute('青海湖环湖', 2100, 9800, 360.0, 2800, 180, 4),
+          _HotRoute('洱海环湖骑行', 1243, 5832, 340, 42.0, 320, 150, 1, 'https://picsum.photos/seed/qy_cycle1/400/120', daysAgo: 1),
+          _HotRoute('独库公路骑行段', 987, 4102, 280, 58.0, 1200, 240, 3, 'https://picsum.photos/seed/qy_cycle2/400/120', daysAgo: 2),
+          _HotRoute('千岛湖绿道全程', 1532, 7200, 460, 68.0, 580, 210, 2, 'https://picsum.photos/seed/qy_cycle3/400/120', daysAgo: 0),
+          _HotRoute('青海湖环湖', 2100, 9800, 520, 360.0, 2800, 180, 4, 'https://picsum.photos/seed/qy_cycle4/400/120', daysAgo: 3),
+          _HotRoute('太湖东山半岛', 756, 3201, 190, 28.0, 150, 90, 1, 'https://picsum.photos/seed/qy_cycle5/400/120', daysAgo: 1),
+          _HotRoute('海南东线骑行', 1890, 8600, 410, 220.0, 1800, 420, 2, 'https://picsum.photos/seed/qy_cycle6/400/120', daysAgo: 5),
         ]);
         break;
       case OutdoorScenario.moto:
         routes.addAll([
-          _HotRoute('皖南川藏线', 1867, 8500, 120.0, 2200, 240, 3),
-          _HotRoute('川西大环线', 3200, 15200, 680.0, 5200, 300, 4),
-          _HotRoute('太行天路', 1543, 7100, 95.0, 1800, 180, 2),
-          _HotRoute('G318川藏线', 5600, 28500, 2100.0, 12000, 720, 5),
-          _HotRoute('秦岭分水岭', 892, 3900, 55.0, 1500, 120, 2),
+          _HotRoute('G318川藏线', 5600, 28500, 1200, 2100.0, 12000, 720, 5, 'https://picsum.photos/seed/qy_moto1/400/120', daysAgo: 2),
+          _HotRoute('川西大环线', 3200, 15200, 680, 680.0, 5200, 300, 4, 'https://picsum.photos/seed/qy_moto2/400/120', daysAgo: 1),
+          _HotRoute('皖南川藏线', 1867, 8500, 420, 120.0, 2200, 240, 3, 'https://picsum.photos/seed/qy_moto3/400/120', daysAgo: 0),
+          _HotRoute('太行天路', 1543, 7100, 350, 95.0, 1800, 180, 2, 'https://picsum.photos/seed/qy_moto4/400/120', daysAgo: 4),
+          _HotRoute('秦岭分水岭', 892, 3900, 210, 55.0, 1500, 120, 2, 'https://picsum.photos/seed/qy_moto5/400/120', daysAgo: 1),
+          _HotRoute('独库公路摩旅段', 2300, 11000, 560, 280.0, 4500, 360, 4, 'https://picsum.photos/seed/qy_moto6/400/120', daysAgo: 7),
         ]);
         break;
       case OutdoorScenario.drive:
         routes.addAll([
-          _HotRoute('独库公路全程', 4500, 21000, 561.0, 3800, 120, 3),
-          _HotRoute('G219新藏线', 3800, 18000, 2100.0, 8800, 600, 5),
-          _HotRoute('川西小环线', 2800, 13500, 320.0, 2400, 120, 2),
-          _HotRoute('青海甘肃大环线', 5200, 25000, 1800.0, 6500, 480, 4),
-          _HotRoute('桂林阳朔山水', 1600, 7200, 85.0, 400, 180, 1),
+          _HotRoute('独库公路全程', 4500, 21000, 980, 561.0, 3800, 120, 3, 'https://picsum.photos/seed/qy_drive1/400/120', daysAgo: 1),
+          _HotRoute('青海甘肃大环线', 5200, 25000, 1100, 1800.0, 6500, 480, 4, 'https://picsum.photos/seed/qy_drive2/400/120', daysAgo: 3),
+          _HotRoute('G219新藏线', 3800, 18000, 760, 2100.0, 8800, 600, 5, 'https://picsum.photos/seed/qy_drive3/400/120', daysAgo: 5),
+          _HotRoute('川西小环线', 2800, 13500, 590, 320.0, 2400, 120, 2, 'https://picsum.photos/seed/qy_drive4/400/120', daysAgo: 0),
+          _HotRoute('桂林阳朔山水', 1600, 7200, 380, 85.0, 400, 180, 1, 'https://picsum.photos/seed/qy_drive5/400/120', daysAgo: 2),
+          _HotRoute('呼伦贝尔大草原', 3200, 14000, 640, 450.0, 1200, 300, 2, 'https://picsum.photos/seed/qy_drive6/400/120', daysAgo: 6),
         ]);
         break;
     }
+    // V6.1: 按评分排序: likes×1 + walkers×2 + stars×0.5, 7天加权
+    routes.sort((a, b) => b.score.compareTo(a.score));
     _hotRoutes = routes;
   }
 
@@ -328,30 +334,44 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     );
   }
 
-  // ==================== 4.2 品牌标识区 ("去野" 金色渐变光泽, 无副标题) ====================
+  // ==================== 4.2 品牌标识区 (V6.1: 等高线纹理 + 字间距8) ====================
   Widget _buildBrand() {
     return AnimatedOpacity(
       opacity: _cardsVisible ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 500),
       child: Padding(
         padding: const EdgeInsets.only(top: 24),
-        child: ShaderMask(
-          shaderCallback: (Rect bounds) {
-            return const LinearGradient(
-              colors: [AppConfig.goldStart, AppConfig.goldEnd],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(bounds);
-          },
-          blendMode: BlendMode.srcATop,
-          child: const Text(
-            '去野',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppConfig.textPrimary,
-              letterSpacing: 3,
-            ),
+        child: SizedBox(
+          height: 120,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // V6.1: 等高线纹理背景 (3% opacity, 120px直径)
+              CustomPaint(
+                size: const Size(120, 120),
+                painter: _ContourPainter(_primaryColor),
+              ),
+              // "去野" 金色渐变, 字间距 8
+              ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return const LinearGradient(
+                    colors: [AppConfig.goldStart, AppConfig.goldEnd],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.srcATop,
+                child: const Text(
+                  '去野',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: AppConfig.textPrimary,
+                    letterSpacing: 8,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -397,52 +417,60 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildFuncCard(String label, IconData icon, VoidCallback onTap) {
+    final iconFilled = _filledIcon(icon);
     return GestureDetector(
-      onTapDown: (_) => setState(() {}),
-      onTapCancel: () => setState(() {}),
       onTap: onTap,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 1.0, end: 1.0),
-        duration: const Duration(milliseconds: 200),
-        builder: (context, scale, _) {
-          return Transform.scale(
-            scale: scale,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: AppConfig.cardBg,
+          borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
+          boxShadow: AppConfig.cardShadow,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // V6.1: 双色图标 (线条+填充), 渐变圆形背景
+            Container(
+              width: AppConfig.funcCircleSize,
+              height: AppConfig.funcCircleSize,
               decoration: BoxDecoration(
-                color: AppConfig.cardBg,
-                borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
-                boxShadow: AppConfig.cardShadow,
+                gradient: LinearGradient(
+                  colors: [_primaryColor.withOpacity(0.12), _primaryColor.withOpacity(0.06)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  // 图标 40px 位于 56px 浅色圆形背景
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: AppConfig.funcCircleSize,
-                    height: AppConfig.funcCircleSize,
-                    decoration: BoxDecoration(
-                      color: _primaryColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, size: AppConfig.funcIconSize, color: _primaryColor),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    label,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
-                  ),
+                  if (iconFilled != null)
+                    Icon(iconFilled, size: AppConfig.funcIconSize, color: _primaryColor.withOpacity(0.30)),
+                  Icon(icon, size: AppConfig.funcIconSize, color: _primaryColor),
                 ],
               ),
             ),
-          );
-        },
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  IconData? _filledIcon(IconData outlined) {
+    if (outlined == Icons.route_outlined) return Icons.route;
+    if (outlined == Icons.timeline_outlined) return Icons.timeline;
+    if (outlined == Icons.checklist_outlined) return Icons.checklist;
+    return null;
+  }
+
   // ==================== 4.4 热门路线区 ====================
+  // ==================== V6.1 热门路线区 (沉浸式图片卡片 120px) ====================
   Widget _buildHotRoutes() {
     return AnimatedOpacity(
       opacity: _card3Visible ? 1.0 : 0.0,
@@ -450,7 +478,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 标题行 "── 热门路线 ──"
+          // 标题行
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
             child: Row(
@@ -468,102 +496,141 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 ),
                 GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage())),
-                  child: const Text(
-                    '查看全部 >',
-                    style: TextStyle(fontSize: 12, color: AppConfig.textSecondary),
-                  ),
+                  child: const Text('查看全部 >', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppConfig.cardGap),
-          // 路线卡片 (带入场动画: 底部上浮 30px)
-          ...List.generate(_hotRoutes.length, (i) {
-            return _buildRouteCard(_hotRoutes[i], index: i, total: _hotRoutes.length);
-          }),
+          // V6.1: 横向滚动沉浸式图片卡片 120px 高
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+              itemCount: _hotRoutes.length,
+              itemExtent: 200,
+              itemBuilder: (context, i) {
+                return Padding(
+                  padding: EdgeInsets.only(right: i == _hotRoutes.length - 1 ? 0 : 12),
+                  child: _buildRouteCard(_hotRoutes[i], index: i),
+                );
+              },
+            ),
+          ),
+          // V6.5 Fix 9: 安全免责声明
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+            child: Text(
+              '⚠️ 户外活动具有一定危险性，出行前请充分准备并评估风险',
+              style: TextStyle(fontSize: 11, color: AppConfig.textSecondary.withOpacity(0.5)),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRouteCard(_HotRoute route, {int index = 0, int total = 1}) {
-    return FutureAnimatedEntry(
-      delayMs: 300 + index * 80,
-      offsetY: 30.0,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppConfig.pageMargin, 0, AppConfig.pageMargin,
-          index == total - 1 ? 0 : AppConfig.cardGap,
-        ),
-        child: Material(
-          color: AppConfig.cardBg,
-          borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-            onTap: () {
-              final model = RouteModel(
-                id: 'hot_${route.name.hashCode}',
-                name: route.name,
-                scenario: _scene,
-                difficulty: route.difficulty,
-                distanceKm: route.distanceKm,
-                durationMinutes: route.durationMinutes,
-                totalClimb: route.climb,
-              );
-              Navigator.push(context, MaterialPageRoute(builder: (_) => _RouteDetailStub(route: model)));
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-                boxShadow: AppConfig.cardShadow,
-              ),
-              child: Row(
+  // V6.1: 沉浸式图片卡片 (200×120, 图片+渐变遮罩+信息叠加)
+  Widget _buildRouteCard(_HotRoute route, {int index = 0}) {
+    return AnimatedOpacity(
+      opacity: _card3Visible ? 1.0 : 0.0,
+      duration: Duration(milliseconds: 300 + index * 80),
+      child: AnimatedSlide(
+        offset: _card3Visible ? Offset.zero : const Offset(0, 0.3),
+        duration: Duration(milliseconds: 400 + index * 80),
+        curve: Curves.easeOut,
+        child: GestureDetector(
+          onTap: () {
+            final model = RouteModel(
+              id: 'hot_${route.name.hashCode}',
+              name: route.name,
+              scenario: _scene,
+              difficulty: route.difficulty,
+              distanceKm: route.distanceKm,
+              durationMinutes: route.durationMinutes,
+              totalClimb: route.climb,
+            );
+            Navigator.push(context, MaterialPageRoute(builder: (_) => _RouteDetailStub(route: model)));
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
+            child: SizedBox(
+              width: 200, height: 120,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Expanded(
+                  // 封面图
+                  Image.network(
+                    route.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(color: _primaryColor.withOpacity(0.15)),
+                  ),
+                  // 渐变遮罩: 上浅 → 下深 (V6.5 Fix 3: rgba(0,0,0,0.65)→0.3)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [const Color(0x4D000000), const Color(0x66000000), const Color(0xA6000000)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                  // 难度标签 (右上)
+                  Positioned(
+                    top: 8, right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _difficultyLabel(route.difficulty),
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  // 底部信息
+                  Positioned(
+                    bottom: 10, left: 10, right: 10,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           route.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.thumb_up_outlined, size: 13, color: AppConfig.textSecondary),
-                            const SizedBox(width: 3),
-                            Text('${route.likes}', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.directions_walk, size: 13, color: AppConfig.textSecondary),
-                            const SizedBox(width: 3),
-                            Text('${route.walkers}人走过', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                            Row(
+                              children: [
+                                const Icon(Icons.thumb_up, size: 11, color: Colors.white70),
+                                const SizedBox(width: 2),
+                                Text(_fmtNum(route.likes), style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.directions_walk, size: 11, color: Colors.white70),
+                                const SizedBox(width: 2),
+                                Text('${_fmtNum(route.walkers)}人走过', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                              ],
+                            ),
+                            Text(
+                              '${route.distanceKm.toStringAsFixed(0)}km ↑${route.climb}m ${_durStr(route.durationMinutes)}',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70),
+                            ),
                           ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${route.distanceKm.toStringAsFixed(1)}km · ↑${route.climb}m · ${_durStr(route.durationMinutes)}',
-                          style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppConfig.tagRadius),
-                    ),
-                    child: Text(
-                      _difficultyLabel(route.difficulty),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: _primaryColor),
-                    ),
+                  // V6.5 Fix 14: 卡片底部细线分隔
+                  const Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Divider(height: 1, thickness: 0.5, color: Colors.white24),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.star_outline_rounded, size: 18, color: AppConfig.textSecondary),
-                  const SizedBox(width: 2),
-                  const Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary),
                 ],
               ),
             ),
@@ -586,6 +653,17 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   String _difficultyLabel(int d) {
     const map = {1: '新手', 2: '入门', 3: '进阶', 4: '困难', 5: '资深'};
     return map[d] ?? '未知';
+  }
+
+  /// V6.5 Fix 4: 千位分隔符格式化
+  String _fmtNum(int n) {
+    final s = n.toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 }
 
@@ -636,18 +714,76 @@ class _FutureAnimatedEntryState extends State<FutureAnimatedEntry> {
 }
 
 // ============================================================
-// 热门路线数据
+// V6.1 品牌等高线纹理绘制
+// 在品牌"去野"文字背后绘制淡色圆形等高线纹理
+// ============================================================
+class _ContourPainter extends CustomPainter {
+  final Color baseColor;
+
+  _ContourPainter(this.baseColor);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2;
+
+    // 同心圆 (等高线)
+    final circlePaint = Paint()
+      ..color = baseColor.withOpacity(0.04)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    for (int i = 0; i < 6; i++) {
+      final r = maxRadius * (0.3 + i * 0.12);
+      canvas.drawCircle(center, r, circlePaint);
+    }
+
+    // 波浪等高线纹理
+    final wavePaint = Paint()
+      ..color = baseColor.withOpacity(0.03)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+
+    for (int w = 0; w < 4; w++) {
+      final path = Path();
+      final baseY = size.height * 0.2 + w * 16;
+      path.moveTo(0, baseY);
+      for (double x = 0; x < size.width; x += 4) {
+        final relX = x / size.width;
+        final y = baseY + sin(relX * 6.28 * 1.5 + w * 1.2) * 6;
+        path.lineTo(x, y);
+      }
+      canvas.drawPath(path, wavePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ============================================================
+// 热门路线数据 (V6.1: 增加图片URL和收藏数)
+// 排序: likes×1 + walkers×2 + stars×0.5, 7天加权
 // ============================================================
 class _HotRoute {
   final String name;
   final int likes;
   final int walkers;
+  final int stars;        // V6.1 新增
   final double distanceKm;
   final int climb;
   final int durationMinutes;
   final int difficulty;
+  final String imageUrl;  // V6.1 新增: picsum 种子URL
+  final int daysAgo;       // 用于7天加权排序
 
-  const _HotRoute(this.name, this.likes, this.walkers, this.distanceKm, this.climb, this.durationMinutes, this.difficulty);
+  const _HotRoute(
+    this.name, this.likes, this.walkers, this.stars,
+    this.distanceKm, this.climb, this.durationMinutes,
+    this.difficulty, this.imageUrl, {this.daysAgo = 0}
+  );
+
+  double get score => (likes * 1.0 + walkers * 2.0 + stars * 0.5) * (1.0 / (1 + daysAgo));
 }
 
 // ============================================================

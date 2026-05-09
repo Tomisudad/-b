@@ -19,9 +19,11 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   int _currentIndex = 0;
   double _bgScale = 1.0;
+  late AnimationController _btnBounceCtrl;
+  late Animation<double> _btnBounceAnim;
 
   static const _labels = ['首页', '搭子', '', '社区', '我的'];
   static const _icons = [
@@ -39,8 +41,25 @@ class _MainShellState extends State<MainShell> {
     Icons.person_rounded,
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _btnBounceCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _btnBounceAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.1), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.1, end: 1.0), weight: 60),
+    ]).animate(CurvedAnimation(parent: _btnBounceCtrl, curve: Curves.easeOutBack));
+  }
+
+  @override
+  void dispose() {
+    _btnBounceCtrl.dispose();
+    super.dispose();
+  }
+
   void _onTap(int index) {
     if (index == 2) {
+      _btnBounceCtrl.forward().then((_) => _btnBounceCtrl.reset());
       _showDeparturePanel();
       return;
     }
@@ -134,18 +153,33 @@ class _MainShellState extends State<MainShell> {
           left: 0,
           right: 0,
           child: Center(
-            child: GestureDetector(
-              onTap: () => _onTap(2),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: AppConfig.centerBtnSize,
-                height: AppConfig.centerBtnSize,
-                decoration: BoxDecoration(
-                  gradient: goldGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: AppConfig.goldBtnShadow,
+            child: AnimatedBuilder(
+              animation: _btnBounceCtrl,
+              builder: (context, child) => Transform.scale(
+                scale: _btnBounceAnim.value,
+                child: child,
+              ),
+              child: GestureDetector(
+                onTap: () => _onTap(2),
+                child: Container(
+                  width: AppConfig.centerBtnSize,
+                  height: AppConfig.centerBtnSize,
+                  decoration: BoxDecoration(
+                    gradient: goldGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: AppConfig.goldBtnShadow,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 28, height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                      ),
+                      child: const Icon(Icons.add, color: Colors.white, size: 16),
+                    ),
+                  ),
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 28),
               ),
             ),
           ),
@@ -163,26 +197,48 @@ class _MainShellState extends State<MainShell> {
       child: GestureDetector(
         onTap: () => _onTap(index),
         behavior: HitTestBehavior.opaque,
-        child: AnimatedScale(
-          scale: isSelected ? 1.0 : 0.92,
-          duration: const Duration(milliseconds: 200),
-          child: Column(
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: AppConfig.navIconSize, color: color),
-              const SizedBox(height: 2),
-              Text(
-                _labels[index],
-                style: TextStyle(
-                  fontSize: AppConfig.navLabelSize,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: color,
+              // V6.1: selected icon has glow shadow + tiny bounce on tap
+              AnimatedScale(
+                scale: isSelected ? 1.0 : 0.92,
+                duration: const Duration(milliseconds: 200),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // glow dot under active icon
+                    isSelected
+                        ? Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.20),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Icon(icon, size: AppConfig.navIconSize, color: color),
+                          )
+                        : Icon(icon, size: AppConfig.navIconSize, color: color),
+                    const SizedBox(height: 2),
+                    Text(
+                      _labels[index],
+                      style: TextStyle(
+                        fontSize: AppConfig.navLabelSize,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color: color,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
       ),
     );
   }

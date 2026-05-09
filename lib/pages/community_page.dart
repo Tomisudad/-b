@@ -31,24 +31,26 @@ class _CommunityPageState extends State<CommunityPage> {
         _Attach.track('轨迹记录 · 4.2h'),
         _Attach.photo(6),
       ], tags: ['摩旅', '皖南']),
-      _Post(postId: 'p3', user: _User('户外老炮', 'Lv.35', 1204), body: '青海大环线第六次走了。这次带新人，讲一下必经的坑：1) 茶卡盐湖下午去拍不到镜面，必须日出 2) 大柴旦翡翠湖别开车进去 3) 敦煌鸣沙山买鞋套不如光脚。详细路书在主页。', timeAgo: '1小时前', likes: 189, comments: 34, stars: 52, attachments: [
+      _Post(postId: 'p3', user: _User('户外老炮', 'Lv.35', 1204), body: '青海大环线第六次走了。这次带新人，讲一下必经的坑：1) 茶卡盐湖下午去拍不到镜面，必须日出 2) 大柴旦翡翠湖别开车进去 3) 敦煌鸣沙山买鞋套不如光脚。详细路书在主页。', timeAgo: '1小时前', likes: 1893, comments: 127, stars: 352, attachments: [
         _Attach.route('青海甘肃大环线', '1800km · 资深 · 6500m爬升'),
         _Attach.gear('自驾露营装备清单', '11项装备'),
       ], tags: ['自驾', '西北', '攻略']),
       _Post(postId: 'p4', user: _User('骑行小白', 'Lv.5', 18), body: '第一次骑长途，龙井爬坡记录。老哥们帮我看看这速度正常吗？感觉坡上去腿已经不是自己的了 😂', timeAgo: '2小时前', likes: 12, comments: 28, stars: 1, attachments: [
         _Attach.track('8.4km · 310m爬升 · 0.9h'),
       ], tags: ['骑行', '新手', '杭州']),
-      _Post(postId: 'p5', user: _User('路书达人', 'Lv.22', 560), body: '【太行天路详解】全长95km，翻越三个山口，难度不高但风景绝了。附：最佳季节、补给点、住宿推荐。', timeAgo: '3小时前', likes: 78, comments: 22, stars: 35, attachments: [
+      _Post(postId: 'p5', user: _User('路书达人', 'Lv.22', 560), body: '【太行天路详解】全长95km，翻越三个山口，难度不高但风景绝了。附：最佳季节、补给点、住宿推荐。', timeAgo: '3小时前', likes: 782, comments: 53, stars: 135, attachments: [
         _Attach.route('太行天路', '95km · 进阶 · 1800m爬升'),
       ], tags: ['摩旅', '太行山', '路书']),
       _Post(postId: 'p6', user: _User('露营日记', 'Lv.10', 89), body: '德清莫干山下的新露营地，有水电有厕所，晚上能看到银河。🌌', timeAgo: '昨天', likes: 45, comments: 8, stars: 12, attachments: [
         _Attach.photo(3),
         _Attach.gear('自驾露营装备', '11项装备'),
       ], tags: ['露营', '自驾', '浙江']),
-      _Post(postId: 'p7', user: _User('远方行者', 'Lv.15', 215), body: '独库公路今年6月1日全线开通。去年开了一半被封路，今年要补上后半段。有没有一起的？', timeAgo: '昨天', likes: 67, comments: 18, stars: 14, attachments: [
-        _Attach.route('独库公路全程', '561km · 困难 · 3800m爬升'),
-      ], tags: ['自驾', '新疆', '组队']),
-      _Post(postId: 'p8', user: _User('装备党', 'Lv.20', 340), body: '新入手了一套骑行装备，用了一周来反馈：头盔够用但透气性一般；手套强烈推荐，长时间握把不酸。', timeAgo: '前天', likes: 92, comments: 15, stars: 18, attachments: [
+    // V6.1: 替换为骑摄天下 (1205/42/98)
+      _Post(postId: 'p7', user: _User('骑摄天下', 'Lv.28', 680), body: '太湖日落，美到窒息。环湖骑一圈，东山半岛的光影绝了。相机根本停不下来 📸', timeAgo: '昨天', likes: 1205, comments: 42, stars: 98, attachments: [
+        _Attach.route('太湖东山半岛', '28km · 新手 · 150m爬升'),
+        _Attach.photo(9),
+      ], tags: ['骑行', '太湖', '摄影']),
+      _Post(postId: 'p8', user: _User('装备党', 'Lv.20', 340), body: '新入手了一套骑行装备，用了一周来反馈：头盔够用但透气性一般；手套强烈推荐，长时间握把不酸。', timeAgo: '前天', likes: 456, comments: 89, stars: 203, attachments: [
         _Attach.gear('骑行基础装备', '12项装备'),
       ], tags: ['装备', '骑行', '评测']),
     ];
@@ -150,7 +152,7 @@ class _CommunityPageState extends State<CommunityPage> {
         Row(children: [
           _actionBtn(Icons.favorite_border, '${post.likes}', () => setState(() => post.likes++)),
           const SizedBox(width: 20),
-          _actionBtn(Icons.chat_bubble_outline, '${post.comments}', () {}),
+          _actionBtn(Icons.chat_bubble_outline, '${post.comments}', () => _showComments(context, post)),
           const Spacer(),
           _actionBtn(Icons.star_border, '${post.stars}', () {}),
         ]),
@@ -178,6 +180,58 @@ class _CommunityPageState extends State<CommunityPage> {
   Widget _actionBtn(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(onTap: onTap, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 18, color: AppConfig.textSecondary), const SizedBox(width: 3), Text(label, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary))]));
   }
+
+  // V6.5 Fix 8: 评论半屏 — 底部可拖拽面板
+  void _showComments(BuildContext context, _Post post) {
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5, minChildSize: 0.3, maxChildSize: 0.8,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: AppConfig.cardBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppConfig.dialogRadius)),
+          ),
+          child: Stack(children: [
+            ListView(controller: scrollCtrl, padding: const EdgeInsets.only(bottom: 80), children: [
+              Center(child: Container(margin: const EdgeInsets.only(top: 10, bottom: 4), width: 32, height: 4, decoration: BoxDecoration(color: AppConfig.divider, borderRadius: BorderRadius.circular(2)))),
+              const Padding(padding: EdgeInsets.fromLTRB(14, 6, 14, 10), child: Text('评论', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary))),
+              const Divider(height: 1, color: AppConfig.divider),
+              _cItem('骑友小明', '太厉害了！这条线我也想去', '5分钟前'),
+              _cItem('户外达人', '照片拍得好看 📸', '1小时前'),
+              _cItem('新手在路上', '学习了学习了 🙏 下次求带', '2小时前'),
+            ]),
+            // 底部评论输入条
+            Positioned(bottom: 0, left: 0, right: 0, child: Container(
+              padding: EdgeInsets.fromLTRB(14, 8, 14, MediaQuery.of(context).padding.bottom + 8),
+              decoration: const BoxDecoration(color: AppConfig.cardBg, border: Border(top: BorderSide(color: AppConfig.divider))),
+              child: Row(children: [
+                Expanded(child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: AppConfig.bgMain, borderRadius: BorderRadius.circular(20)),
+                  child: const TextField(decoration: InputDecoration(hintText: '写下你的评论...', hintStyle: TextStyle(fontSize: 13, color: AppConfig.textSecondary), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(vertical: 8)), style: TextStyle(fontSize: 13)),
+                )),
+                const SizedBox(width: 8),
+                GestureDetector(onTap: () { setState(() => post.comments++); Navigator.pop(ctx); }, child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(gradient: const LinearGradient(colors: [AppConfig.goldStart, AppConfig.goldEnd]), borderRadius: BorderRadius.circular(20)), child: const Icon(Icons.send, size: 16, color: Colors.white))),
+              ]),
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _cItem(String n, String t, String time) => Padding(
+    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(width: 32, height: 32, decoration: BoxDecoration(gradient: const LinearGradient(colors: [AppConfig.goldStart, AppConfig.goldEnd]), borderRadius: BorderRadius.circular(16)), child: Center(child: Text(n[0], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)))),
+      const SizedBox(width: 10),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Text(n, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)), const SizedBox(width: 8), Text(time, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary))]),
+        const SizedBox(height: 3), Text(t, style: const TextStyle(fontSize: 13, color: AppConfig.textPrimary, height: 1.4)),
+      ])),
+    ]),
+  );
 
   void _showPublishSheet(BuildContext context) {
     final controller = TextEditingController();
@@ -244,6 +298,17 @@ class _Post {
   final List<_Attach> attachments;
   final List<String> tags;
 
-  _Post({required this.postId, required this.user, required this.body, required this.timeAgo, this.likes = 0, this.comments = 0, this.stars = 0, this.attachments = const [], this.tags = const []});
+  _Post({required this.postId, required this.user, required this.body, required this.timeAgo, this.likes = 0, this.comments = 0, this.stars = 0, this.attachments = const [], this.tags = const [], this.postComments = const []});
   int get _hotScore => likes + comments * 3 + stars * 5;
+
+  /// V6.5 Fix 8: 关联评论数据（不参与排序/序列化）
+  final List<_Comment> postComments;
+}
+
+/// V6.5 Fix 8: 评论数据模型
+class _Comment {
+  final String user;
+  final String text;
+  final String timeAgo;
+  const _Comment({required this.user, required this.text, required this.timeAgo});
 }

@@ -79,12 +79,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildMenuGrid() {
     final items = [
       _MI(Icons.route_outlined, '路线规划', AppConfig.cyclePrimary, () {}, '42'),
-      _MI(Icons.timeline_outlined, '我的轨迹', AppConfig.motoPrimary, () {}, '156'),
-      _MI(Icons.star_outlined, '我的收藏', AppConfig.goldStart, () {}, '35'),
-      _MI(Icons.emoji_events_outlined, '勋章', AppConfig.goldStart, () {}, '8'),
-      _MI(Icons.public_outlined, '足迹地图', AppConfig.drivePrimary, () {}, '23'),
-      _MI(Icons.auto_awesome_outlined, '年度报告', const Color(0xFF9C27B0), () {}),
-      _MI(Icons.edit_note_outlined, '我的创作', AppConfig.textSecondary, () {}, '12'),
+      _MI(Icons.timeline_outlined, '我的轨迹', const Color(0xFF3498DB), () {}, '156'),
+      _MI(Icons.star_outlined, '我的收藏', const Color(0xFFF39C12), () {}, '35'),
+      _MI(Icons.emoji_events_outlined, '勋章', const Color(0xFFF1C40F), () {}, '8'),
+      _MI(Icons.public_outlined, '足迹地图', const Color(0xFF27AE60), () {}, '23'),
+      _MI(Icons.auto_awesome_outlined, '年度报告', const Color(0xFFE67E22), () {}),
+      _MI(Icons.edit_note_outlined, '我的创作', const Color(0xFF9B59B6), () {}, '12'),
       _MI(Icons.leaderboard_outlined, '排行榜', AppConfig.cyclePrimary, () {}),
     ];
     return AnimatedOpacity(opacity: _gridVisible ? 1 : 0, duration: const Duration(milliseconds: 500), child: GridView.builder(
