@@ -161,17 +161,16 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                   decoration: BoxDecoration(
                     gradient: goldGradient,
                     shape: BoxShape.circle,
-                    boxShadow: AppConfig.goldBtnShadow,
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 28, height: 28,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppConfig.goldStart.withOpacity(0.4),
+                        blurRadius: AppConfig.centerBtnShadowBlur,
+                        offset: const Offset(0, 4),
                       ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 16),
-                    ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text('+', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w300)),
                   ),
                 ),
               ),
