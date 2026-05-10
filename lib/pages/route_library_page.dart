@@ -4,10 +4,12 @@ import '../config/app_config.dart';
 import '../config/scenario_config.dart';
 import '../models/route_model.dart';
 import '../providers/scenario_provider.dart';
+import 'departure_page.dart';
 
 /// 路线库 —— 按场景展示路线列表
 class RouteLibraryPage extends StatelessWidget {
-  const RouteLibraryPage({super.key});
+  final bool forDeparture;
+  const RouteLibraryPage({super.key, this.forDeparture = false});
 
   String _scenarioEmoji(OutdoorScenario s) {
     switch (s) {
@@ -115,7 +117,20 @@ class RouteLibraryPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: AppConfig.textSecondary),
+              if (forDeparture)
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DeparturePage(fromRoute: route))),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      gradient: goldGradient,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Text('出发', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                )
+              else
+                const Icon(Icons.chevron_right, color: AppConfig.textSecondary),
             ],
           ),
         ),

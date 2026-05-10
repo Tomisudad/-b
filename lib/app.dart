@@ -8,10 +8,11 @@ import 'pages/community_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/route_library_page.dart';
 import 'pages/departure_page.dart';
-import 'services/tracking_service.dart';
+import 'pages/navigation_page.dart';
 import 'config/scenario_config.dart';
 
-/// V5.5 5 Tab 底部导航 + 中间金色 ╋ 按钮 + 三选项出发面板 + bg 缩放动画
+/// V7.3 MainShell — 5 Tab 底部导航 + 中间金色 ╋ 按钮
+/// 顶部栏逻辑下放到各 Page 自行管理
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -25,19 +26,20 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   late AnimationController _btnBounceCtrl;
   late Animation<double> _btnBounceAnim;
 
+  // V7.3 底部导航
   static const _labels = ['首页', '搭子', '', '社区', '我的'];
   static const _icons = [
-    Icons.home_outlined,
+    Icons.door_front_door_outlined,
     Icons.people_outline_rounded,
     Icons.add,
-    Icons.forum_outlined,
+    Icons.chat_bubble_outline_rounded,
     Icons.person_outline_rounded,
   ];
   static const _activeIcons = [
-    Icons.home_rounded,
+    Icons.door_front_door,
     Icons.people_rounded,
     Icons.add,
-    Icons.forum_rounded,
+    Icons.chat_bubble_rounded,
     Icons.person_rounded,
   ];
 
@@ -68,7 +70,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   void _showDeparturePanel() {
     setState(() => _bgScale = 0.95);
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -82,7 +83,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -135,30 +135,24 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
               ),
               child: Padding(
                 padding: EdgeInsets.only(bottom: bottomPadding),
-                child: Row(
-                  children: [
-                    _buildNavItem(0),
-                    _buildNavItem(1),
-                    const Spacer(),
-                    _buildNavItem(3),
-                    _buildNavItem(4),
-                  ],
-                ),
+                child: Row(children: [
+                  _buildNavItem(0),
+                  _buildNavItem(1),
+                  const Spacer(),
+                  _buildNavItem(3),
+                  _buildNavItem(4),
+                ]),
               ),
             ),
           ),
         ),
         Positioned(
           top: -AppConfig.centerBtnOffset,
-          left: 0,
-          right: 0,
+          left: 0, right: 0,
           child: Center(
             child: AnimatedBuilder(
               animation: _btnBounceCtrl,
-              builder: (context, child) => Transform.scale(
-                scale: _btnBounceAnim.value,
-                child: child,
-              ),
+              builder: (context, child) => Transform.scale(scale: _btnBounceAnim.value, child: child),
               child: GestureDetector(
                 onTap: () => _onTap(2),
                 child: Container(
@@ -190,66 +184,64 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   Widget _buildNavItem(int index) {
     final isSelected = _currentIndex == index;
-    final color = isSelected ? AppConfig.cyclePrimary : AppConfig.textSecondary;
+    final color = isSelected ? AppConfig.primary : AppConfig.textSecondary;
     final icon = isSelected ? _activeIcons[index] : _icons[index];
-
     return Expanded(
       child: GestureDetector(
         onTap: () => _onTap(index),
         behavior: HitTestBehavior.opaque,
         child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // V6.1: selected icon has glow shadow + tiny bounce on tap
-              AnimatedScale(
-                scale: isSelected ? 1.0 : 0.92,
-                duration: const Duration(milliseconds: 200),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // glow dot under active icon
-                    isSelected
-                        ? Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: color.withOpacity(0.20),
-                                  blurRadius: 8,
-                                  spreadRadius: 0,
-                                ),
-                              ],
-                            ),
-                            child: Icon(icon, size: AppConfig.navIconSize, color: color),
-                          )
-                        : Icon(icon, size: AppConfig.navIconSize, color: color),
-                    const SizedBox(height: 2),
-                    Text(
-                      _labels[index],
-                      style: TextStyle(
-                        fontSize: AppConfig.navLabelSize,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        color: color,
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedScale(
+              scale: isSelected ? 1.0 : 0.92,
+              duration: const Duration(milliseconds: 200),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  isSelected
+                      ? Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(color: color.withOpacity(0.20), blurRadius: 8, spreadRadius: 0),
+                            ],
+                          ),
+                          child: Icon(icon, size: AppConfig.navIconSize, color: color),
+                        )
+                      : Icon(icon, size: AppConfig.navIconSize, color: color),
+                  const SizedBox(height: 2),
+                  Text(
+                    _labels[index],
+                    style: TextStyle(
+                      fontSize: AppConfig.navLabelSize,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      color: color,
+                    ),
+                  ),
+                  if (isSelected) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      width: 20, height: 2,
+                      decoration: BoxDecoration(
+                        gradient: goldGradient,
+                        borderRadius: BorderRadius.circular(1),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ============================================================
-// V5.5 出发面板 — 3 选项
-//   1) 选择路线出发 → 路线库选线
-//   2) 新建路线并出发 → 完整创建流程
-//   3) 自由记录直接开始 → 立即开始追踪，不弹框
-// ============================================================
+// ===== V7.3 出发面板 =====
 class _DepartureSheet extends StatelessWidget {
   const _DepartureSheet();
 
@@ -278,52 +270,35 @@ class _DepartureSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  '选择出发方式',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
-                ),
+                const Text('选择出发方式', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
                 const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
-                  child: Column(
-                    children: [
-                      _buildOption(context, '🗺️', '选择路线出发', '从已规划的路线出发', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage()));
-                      }),
-                      const SizedBox(height: 8),
-                      _buildOption(context, '✏️', '新建路线并出发', '地图打点或导入GPX', () {
-                        Navigator.pop(context);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
-                      }),
-                      const SizedBox(height: 8),
-                      _buildOption(context, '▶️', '自由记录直接开始', '不选路线，直接记录轨迹', () {
-                        Navigator.pop(context);
-                        // V5.5: 直接开始追踪，不弹框
-                        TrackingService.instance.startTracking(OutdoorScenario.cycle);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('🎯 轨迹记录已开始'),
-                            backgroundColor: AppConfig.cyclePrimary,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+                  child: Column(children: [
+                    _buildOption(context, '🗺️', '选择路线出发', '从已规划的路线库选择', () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RouteLibraryPage(forDeparture: true)));
+                    }),
+                    const SizedBox(height: 8),
+                    _buildOption(context, '✏️', '新建路线并出发', '地图打点或导入GPX', () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
+                    }),
+                    const SizedBox(height: 8),
+                    _buildOption(context, '▶️', '自由记录直接开始', '不选路线，直接记录轨迹', () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const NavigationPage(scenario: OutdoorScenario.cycle)));
+                    }),
+                  ]),
                 ),
                 const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
                   child: SizedBox(
-                    width: double.infinity,
-                    height: AppConfig.secondaryBtnH,
+                    width: double.infinity, height: AppConfig.secondaryBtnH,
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        '关闭',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textSecondary),
-                      ),
+                      child: const Text('关闭', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppConfig.textSecondary)),
                     ),
                   ),
                 ),
@@ -346,31 +321,29 @@ class _DepartureSheet extends StatelessWidget {
         child: Container(
           height: AppConfig.primaryBtnH,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: AppConfig.cyclePrimary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: AppConfig.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-                    const SizedBox(height: 2),
-                    Text(desc, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-                  ],
-                ),
+              child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(desc, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+                ],
               ),
-              Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary.withOpacity(0.4)),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right, size: 18, color: AppConfig.textSecondary.withOpacity(0.4)),
+          ]),
         ),
       ),
     );

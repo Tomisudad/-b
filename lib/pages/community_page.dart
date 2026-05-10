@@ -31,26 +31,26 @@ class _CommunityPageState extends State<CommunityPage> {
         _Attach.track('轨迹记录 · 4.2h'),
         _Attach.photo(6),
       ], tags: ['摩旅', '皖南']),
-      _Post(postId: 'p3', user: _User('户外老炮', 'Lv.35', 1204), body: '青海大环线第六次走了。这次带新人，讲一下必经的坑：1) 茶卡盐湖下午去拍不到镜面，必须日出 2) 大柴旦翡翠湖别开车进去 3) 敦煌鸣沙山买鞋套不如光脚。详细路书在主页。', timeAgo: '1小时前', likes: 1893, comments: 127, stars: 352, attachments: [
+      _Post(postId: 'p3', user: _User('户外老炮', 'Lv.35', 1204), body: '青海大环线第六次走了。这次带新人，讲一下必经的坑：1) 茶卡盐湖下午去拍不到镜面，必须日出 2) 大柴旦翡翠湖别开车进去 3) 敦煌鸣沙山买鞋套不如光脚。详细路书在主页。', timeAgo: '1小时前', likes: 1893, comments: 210, stars: 127, attachments: [
         _Attach.route('青海甘肃大环线', '1800km · 资深 · 6500m爬升'),
         _Attach.gear('自驾露营装备清单', '11项装备'),
       ], tags: ['自驾', '西北', '攻略']),
-      _Post(postId: 'p4', user: _User('骑行小白', 'Lv.5', 18), body: '第一次骑长途，龙井爬坡记录。老哥们帮我看看这速度正常吗？感觉坡上去腿已经不是自己的了 😂', timeAgo: '2小时前', likes: 12, comments: 28, stars: 1, attachments: [
+      _Post(postId: 'p4', user: _User('骑行小白', 'Lv.5', 18), body: '第一次骑长途，龙井爬坡记录。老哥们帮我看看这速度正常吗？感觉坡上去腿已经不是自己的了 😂', timeAgo: '2小时前', likes: 12, comments: 8, stars: 1, attachments: [
         _Attach.track('8.4km · 310m爬升 · 0.9h'),
       ], tags: ['骑行', '新手', '杭州']),
-      _Post(postId: 'p5', user: _User('路书达人', 'Lv.22', 560), body: '【太行天路详解】全长95km，翻越三个山口，难度不高但风景绝了。附：最佳季节、补给点、住宿推荐。', timeAgo: '3小时前', likes: 782, comments: 53, stars: 135, attachments: [
+      _Post(postId: 'p5', user: _User('路书达人', 'Lv.22', 560), body: '【太行天路详解】全长95km，翻越三个山口，难度不高但风景绝了。附：最佳季节、补给点、住宿推荐。', timeAgo: '3小时前', likes: 782, comments: 178, stars: 53, attachments: [
         _Attach.route('太行天路', '95km · 进阶 · 1800m爬升'),
       ], tags: ['摩旅', '太行山', '路书']),
-      _Post(postId: 'p6', user: _User('露营日记', 'Lv.10', 89), body: '德清莫干山下的新露营地，有水电有厕所，晚上能看到银河。🌌', timeAgo: '昨天', likes: 45, comments: 8, stars: 12, attachments: [
+      _Post(postId: 'p6', user: _User('露营日记', 'Lv.10', 89), body: '德清莫干山下的新露营地，有水电有厕所，晚上能看到银河。🌌', timeAgo: '昨天', likes: 45, comments: 18, stars: 8, attachments: [
         _Attach.photo(3),
         _Attach.gear('自驾露营装备', '11项装备'),
       ], tags: ['露营', '自驾', '浙江']),
     // V6.1: 替换为骑摄天下 (1205/42/98)
-      _Post(postId: 'p7', user: _User('骑摄天下', 'Lv.28', 680), body: '太湖日落，美到窒息。环湖骑一圈，东山半岛的光影绝了。相机根本停不下来 📸', timeAgo: '昨天', likes: 1205, comments: 42, stars: 98, attachments: [
+      _Post(postId: 'p7', user: _User('骑摄天下', 'Lv.28', 680), body: '太湖日落，美到窒息。环湖骑一圈，东山半岛的光影绝了。相机根本停不下来 📸', timeAgo: '昨天', likes: 1205, comments: 98, stars: 42, attachments: [
         _Attach.route('太湖东山半岛', '28km · 新手 · 150m爬升'),
         _Attach.photo(9),
       ], tags: ['骑行', '太湖', '摄影']),
-      _Post(postId: 'p8', user: _User('装备党', 'Lv.20', 340), body: '新入手了一套骑行装备，用了一周来反馈：头盔够用但透气性一般；手套强烈推荐，长时间握把不酸。', timeAgo: '前天', likes: 456, comments: 89, stars: 203, attachments: [
+      _Post(postId: 'p8', user: _User('装备党', 'Lv.20', 340), body: '新入手了一套骑行装备，用了一周来反馈：头盔够用但透气性一般；手套强烈推荐，长时间握把不酸。', timeAgo: '前天', likes: 456, comments: 178, stars: 89, attachments: [
         _Attach.gear('骑行基础装备', '12项装备'),
       ], tags: ['装备', '骑行', '评测']),
     ];

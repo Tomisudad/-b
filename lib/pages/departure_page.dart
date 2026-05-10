@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../config/app_config.dart';
 import '../config/scenario_config.dart';
+import '../models/route_model.dart';
 import '../providers/trip_provider.dart';
 import 'navigation_page.dart';
 
@@ -12,7 +13,8 @@ import 'navigation_page.dart';
 enum _FlowStep { method, smartRecommend, mapPin, gpxImport, routeInfo, confirm, navigating }
 
 class DeparturePage extends StatefulWidget {
-  const DeparturePage({super.key});
+  final RouteModel? fromRoute;
+  const DeparturePage({super.key, this.fromRoute});
 
   @override
   State<DeparturePage> createState() => _DeparturePageState();
@@ -44,11 +46,24 @@ class _DeparturePageState extends State<DeparturePage> {
   bool _smartNeedViewpoint = true;
   int _smartMaxHour = 4;
   _SmartResult? _smartResult;
+  bool _offlineReady = false;
+  bool _isSolo = true;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl.text = _routeName;
+    final r = widget.fromRoute;
+    if (r != null) {
+      _routeName = r.name;
+      _scenario = r.scenario;
+      _difficulty = switch (r.difficulty) { 1 => RouteDifficulty.easy, 2 => RouteDifficulty.medium, 3 => RouteDifficulty.hard, _ => RouteDifficulty.extreme };
+      _totalDistance = r.distanceKm;
+      _totalClimb = r.totalClimb;
+      _estMinutes = r.durationMinutes;
+      _nameCtrl.text = r.name;
+      _step = _FlowStep.confirm;
+    }
   }
 
   @override
@@ -963,24 +978,29 @@ class _DeparturePageState extends State<DeparturePage> {
     );
   }
 
-  // ==================== 4.5 出发确认页 ====================
+  // ==================== V6.5 出发确认页 (2.3) ====================
   Widget _buildConfirmPage() {
+    final cfg = ScenarioConfig.of(_scenario);
+    final eqItems = cfg.flatEquipmentItems.take(5).toList();
+    final checkedCount = (widget.fromRoute != null) ? 3 : 4;
+
     return Scaffold(
       backgroundColor: AppConfig.bgMain,
       appBar: AppBar(title: const Text('出发确认')),
       body: ListView(
         padding: const EdgeInsets.all(AppConfig.pageMargin),
         children: [
-          // 路线摘要
+          // ── 路线摘要 ──
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(_routeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+              if (_difficulty != RouteDifficulty.easy) ...[const SizedBox(height: 4), Text(_difficulty.label + '路线', style: TextStyle(fontSize: 13, color: _scenario.primaryColor))],
               const SizedBox(height: 12),
-              // 地图缩略
+              // V6.5: 地图缩略图 180px
               Container(
-                height: 120,
+                height: 180,
                 decoration: BoxDecoration(
                   color: _scenario.primaryColor.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(8),
@@ -988,7 +1008,13 @@ class _DeparturePageState extends State<DeparturePage> {
                 ),
                 child: _waypoints.isNotEmpty
                     ? CustomPaint(painter: _RoutePreviewPainter(_waypoints, _scenario.primaryColor))
-                    : const Center(child: Text('静态路线预览', style: TextStyle(fontSize: 13, color: AppConfig.textSecondary))),
+                    : Center(
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.route, size: 32, color: _scenario.primaryColor.withOpacity(0.3)),
+                          const SizedBox(height: 6),
+                          Text('${_totalDistance.toStringAsFixed(1)}km · ↑${_totalClimb}m', style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+                        ]),
+                      ),
               ),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
@@ -996,22 +1022,35 @@ class _DeparturePageState extends State<DeparturePage> {
                 _confirmData('爬 升', '${_totalClimb} m'),
                 _confirmData('预计用时', '${(_estMinutes ~/ 60)}h${_estMinutes % 60}min'),
               ]),
+              const Divider(height: 24, color: AppConfig.divider),
+              // 场景标签 + 难度
+              Wrap(spacing: 8, children: [
+                _infoTag('${_scenario.emoji} ${_scenario.label}', _scenario.primaryColor),
+                _infoTag(_difficulty.label, AppConfig.textPrimary),
+              ]),
             ]),
           ),
 
           const SizedBox(height: AppConfig.cardGap),
 
-          // 实时天气
+          // ── 实时天气 + 未来3小时 ──
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                Icon(Icons.wb_sunny_outlined, size: 18, color: AppConfig.goldEnd),
-                SizedBox(width: 6),
-                Text('实时天气', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-                Spacer(),
-                Text('查看详情 >', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+              Row(children: [
+                const Icon(Icons.wb_sunny_outlined, size: 18, color: AppConfig.goldEnd),
+                const SizedBox(width: 6),
+                const Text('实时天气', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text('未来3小时预报', style: TextStyle(fontSize: 12, color: AppConfig.cyclePrimary)),
+                    SizedBox(width: 2),
+                    Icon(Icons.chevron_right, size: 14, color: AppConfig.cyclePrimary),
+                  ]),
+                ),
               ]),
               const SizedBox(height: 10),
               Row(children: [
@@ -1028,62 +1067,50 @@ class _DeparturePageState extends State<DeparturePage> {
 
           const SizedBox(height: AppConfig.cardGap),
 
-          // 装备摘要
-          if (_linkedChecklist != null)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Row(children: [
-                  Icon(Icons.checklist_outlined, size: 18, color: AppConfig.cyclePrimary),
-                  SizedBox(width: 6),
-                  Text('装备检查', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-                ]),
-                const SizedBox(height: 8),
-                Text(_linkedChecklist!, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: AppConfig.motoPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: const Text('⚠ 2 项未检查', style: TextStyle(fontSize: 11, color: AppConfig.motoPrimary)),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8)),
-                    child: const Text('去检查装备', style: TextStyle(fontSize: 13)),
-                  ),
-                ),
-              ]),
-            ),
-
-          const SizedBox(height: AppConfig.cardGap),
-
-          // 离线地图
+          // ── V6.5: 装备检查摘要 ──
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                Icon(Icons.cloud_download_outlined, size: 18, color: AppConfig.drivePrimary),
-                SizedBox(width: 6),
-                Text('离线地图', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+              Row(children: [
+                const Icon(Icons.checklist_outlined, size: 18, color: AppConfig.cyclePrimary),
+                const SizedBox(width: 6),
+                const Text('装备检查', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                const Spacer(),
+                // V6.5: 核心装备 X/Y 已检查
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: AppConfig.cyclePrimary.withOpacity(0.08), borderRadius: BorderRadius.circular(4)),
+                  child: Text('$checkedCount/${eqItems.length} 已检查', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppConfig.cyclePrimary)),
+                ),
               ]),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: AppConfig.sosRed.withOpacity(0.08), borderRadius: BorderRadius.circular(4)),
-                child: const Text('⚠ 浙江省离线地图未下载，建议提前下载', style: TextStyle(fontSize: 11, color: AppConfig.sosRed)),
-              ),
+              const SizedBox(height: 8),
+              if (_linkedChecklist != null)
+                Text(_linkedChecklist!, style: const TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+              if (_linkedChecklist == null)
+                const Text('未关联装备清单', style: TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
+              const SizedBox(height: 8),
+              // V6.5: 具体装备项 (最多5项)
+              ...List.generate(eqItems.length, (i) {
+                final checked = i < checkedCount;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(children: [
+                    Icon(checked ? Icons.check_circle : Icons.radio_button_unchecked, size: 14, color: checked ? AppConfig.cyclePrimary : AppConfig.textSecondary.withOpacity(0.4)),
+                    const SizedBox(width: 8),
+                    Text(eqItems[i], style: TextStyle(fontSize: 13, color: checked ? AppConfig.textPrimary : AppConfig.textSecondary, decoration: checked ? null : TextDecoration.lineThrough)),
+                  ]),
+                );
+              }),
+              // V6.5: 提醒文字
+              if (checkedCount < eqItems.length) ...[const SizedBox(height: 4), Text('还有${eqItems.length - checkedCount}项装备未检查，建议确认后出发', style: const TextStyle(fontSize: 11, color: AppConfig.motoPrimary))],
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8)),
-                  child: const Text('下载离线地图', style: TextStyle(fontSize: 13)),
+                  child: Text(_linkedChecklist != null ? '去检查装备' : '去设置装备清单', style: const TextStyle(fontSize: 13)),
                 ),
               ),
             ]),
@@ -1091,26 +1118,108 @@ class _DeparturePageState extends State<DeparturePage> {
 
           const SizedBox(height: AppConfig.cardGap),
 
-          // 组队（可选）
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
-              child: const Row(children: [
-                Icon(Icons.group_add_outlined, size: 18, color: AppConfig.motoPrimary),
-                SizedBox(width: 6),
-                Expanded(child: Text('组队选项（可跳过）', style: TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
-                Text('选人组队', style: TextStyle(fontSize: 13, color: AppConfig.cyclePrimary)),
-                SizedBox(width: 4),
-                Icon(Icons.chevron_right, size: 16, color: AppConfig.textSecondary),
+          // ── V6.5: 离线地图 (条件样式) ──
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.cloud_download_outlined, size: 18, color: AppConfig.drivePrimary),
+                const SizedBox(width: 6),
+                const Text('离线地图', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => _offlineReady = !_offlineReady),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_offlineReady ? '已下载 ✅' : '未下载 ⚠️', style: TextStyle(fontSize: 12, color: _offlineReady ? AppConfig.cyclePrimary : AppConfig.motoPrimary)),
+                    const SizedBox(width: 2),
+                    Icon(Icons.swap_horiz, size: 12, color: AppConfig.textSecondary.withOpacity(0.3)),
+                  ]),
+                ),
               ]),
-            ),
+              const SizedBox(height: 6),
+              if (_offlineReady)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: AppConfig.cyclePrimary.withOpacity(0.08), borderRadius: BorderRadius.circular(4)),
+                  child: const Text('✅ 离线地图已就绪，无网络也能正常导航', style: TextStyle(fontSize: 11, color: AppConfig.cyclePrimary)),
+                )
+              else ...[Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppConfig.motoPrimary.withOpacity(0.08), borderRadius: BorderRadius.circular(4)),
+                child: const Text('⚠️ 路线区域未下载，建议下载离线地图', style: TextStyle(fontSize: 11, color: AppConfig.motoPrimary)),
+              ), const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _offlineReady = true),
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8)),
+                  child: const Text('去下载', style: TextStyle(fontSize: 13)),
+                ),
+              )],
+            ]),
+          ),
+
+          const SizedBox(height: AppConfig.cardGap),
+
+          // ── V6.5: 组队选项 ──
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.group_add_outlined, size: 18, color: AppConfig.motoPrimary),
+                const SizedBox(width: 6),
+                const Text('出行方式', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
+                const Spacer(),
+                Text('可跳过', style: TextStyle(fontSize: 11, color: AppConfig.textSecondary.withOpacity(0.5))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSolo = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _isSolo ? AppConfig.cyclePrimary.withOpacity(0.06) : AppConfig.cardBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _isSolo ? AppConfig.cyclePrimary : AppConfig.divider, width: _isSolo ? 1.5 : 0.8),
+                      ),
+                      child: Column(children: [
+                        Icon(Icons.person, size: 22, color: _isSolo ? AppConfig.cyclePrimary : AppConfig.textSecondary),
+                        const SizedBox(height: 4),
+                        Text('独自出行', style: TextStyle(fontSize: 13, fontWeight: _isSolo ? FontWeight.w600 : FontWeight.w400, color: _isSolo ? AppConfig.cyclePrimary : AppConfig.textSecondary)),
+                      ]),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSolo = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: !_isSolo ? AppConfig.motoPrimary.withOpacity(0.06) : AppConfig.cardBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: !_isSolo ? AppConfig.motoPrimary : AppConfig.divider, width: !_isSolo ? 1.5 : 0.8),
+                      ),
+                      child: Column(children: [
+                        Icon(Icons.group, size: 22, color: !_isSolo ? AppConfig.motoPrimary : AppConfig.textSecondary),
+                        const SizedBox(height: 4),
+                        Text('组队出行', style: TextStyle(fontSize: 13, fontWeight: !_isSolo ? FontWeight.w600 : FontWeight.w400, color: !_isSolo ? AppConfig.motoPrimary : AppConfig.textSecondary)),
+                      ]),
+                    ),
+                  ),
+                ),
+              ]),
+            ]),
           ),
 
           const SizedBox(height: AppConfig.sectionGap),
 
-          // ▶️ 开始导航
+          // ── V6.5: ▶️ 开始导航 (金色渐变按钮) ──
           GestureDetector(
             onTap: _onStartNavigation,
             child: Container(
@@ -1158,6 +1267,18 @@ class _DeparturePageState extends State<DeparturePage> {
     ]);
   }
 
+  Widget _infoTag(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+    );
+  }
+
   Widget _weatherBlock(String time, String icon, String temp, String desc) {
     return Expanded(
       child: Column(children: [
@@ -1171,21 +1292,66 @@ class _DeparturePageState extends State<DeparturePage> {
   }
 
   void _onStartNavigation() {
-    // 软提示
-    if (_linkedChecklist != null) {
-      showDialog(
+    // V6.5: 软校验 — modal bottom sheet (非阻断)
+    final eqItems = ScenarioConfig.of(_scenario).flatEquipmentItems.take(5).toList();
+    final checkedCount = (widget.fromRoute != null) ? 3 : 4;
+    final hasWarnings = (checkedCount < eqItems.length) || !_offlineReady;
+
+    if (hasWarnings) {
+      showModalBottomSheet(
         context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.dialogRadius)),
-          title: const Text('出发提醒', style: TextStyle(fontWeight: FontWeight.w700)),
-          content: const Text('装备有未完成项，离线地图未下载。\n建议检查/下载后出发，确认出发？'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-            TextButton(
-              onPressed: () { Navigator.pop(ctx); _startNavigation(); },
-              child: const Text('确认出发', style: TextStyle(color: AppConfig.goldStart, fontWeight: FontWeight.w600)),
-            ),
-          ],
+        backgroundColor: Colors.transparent,
+        builder: (_) => Container(
+          decoration: const BoxDecoration(
+            color: AppConfig.cardBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppConfig.dialogRadius)),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 32, height: 4, decoration: BoxDecoration(color: AppConfig.divider, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              const Icon(Icons.info_outline, size: 36, color: AppConfig.goldStart),
+              const SizedBox(height: 12),
+              const Text('出发前建议检查', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
+              const SizedBox(height: 8),
+              if (checkedCount < eqItems.length)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('⚠ 还有${eqItems.length - checkedCount}项装备未检查', style: const TextStyle(fontSize: 13, color: AppConfig.motoPrimary)),
+                ),
+              if (!_offlineReady)
+                const Text('⚠ 离线地图未下载', style: TextStyle(fontSize: 13, color: AppConfig.motoPrimary)),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () { Navigator.pop(context); _startNavigation(); },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    backgroundColor: AppConfig.goldStart,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
+                  ),
+                  child: const Text('确认出发', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    side: const BorderSide(color: AppConfig.divider),
+                    foregroundColor: AppConfig.textSecondary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
+                  ),
+                  child: const Text('去检查/下载', style: TextStyle(fontSize: 14)),
+                ),
+              ),
+            ]),
+          ),
         ),
       );
       return;
