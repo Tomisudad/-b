@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
-import 'nearby_poi_page.dart';
-import 'cycling_knowledge_page.dart';
 
-/// V7.3 我的待办准备 — 出发前检查
-/// 系统自动记忆状态，用户看一眼缺啥补啥，所有项目可跳过
+/// V7.5 我的待办 — 可持久化的骑行待办系统
+/// 三阶段：出发前 / 骑行中 / 骑行后
+/// 支持：预置装备清单 + 自由添加待办 + 状态持久化
 class MyTodoPage extends StatefulWidget {
   const MyTodoPage({super.key});
 
@@ -13,123 +15,254 @@ class MyTodoPage extends StatefulWidget {
 }
 
 class _MyTodoPageState extends State<MyTodoPage> {
-  // 装备状态: null=未确认, true=已准备, false=需补充
-  final Map<String, _ItemState> _coreGear = {
-    '头盔':         _ItemState(icon: '✅', done: true),
-    '手套':         _ItemState(icon: '✅', done: true),
-    '水壶×2':       _ItemState(icon: '✅', done: true),
-    '内胎×2':       _ItemState(icon: '⚠️', done: false, hint: '需补充×1'),
-    '打气筒':       _ItemState(icon: '✅', done: true),
-    '能量胶×3':     _ItemState(icon: '⚠️', done: false, hint: '只剩1个'),
-    '前灯':         _ItemState(icon: '✅', done: true),
-    '尾灯':         _ItemState(icon: '✅', done: true),
-    '骑行眼镜':     _ItemState(icon: '⬜', done: null),
-    '雨衣':         _ItemState(icon: '✅', done: true),
+  late SharedPreferences _prefs;
+
+  // 三阶段待办
+  final Map<TodoPhase, List<TodoItem>> _todos = {
+    TodoPhase.preRide: [],
+    TodoPhase.duringRide: [],
+    TodoPhase.postRide: [],
   };
 
-  final Map<String, _ItemState> _bikeStatus = {
-    '刹车检查':       _ItemState(icon: '✅', done: true),
-    '胎压检查':       _ItemState(icon: '✅', done: true),
-    '链条润油':       _ItemState(icon: '⚠️', done: false, hint: '上次: 150km前'),
-    '变速检查':       _ItemState(icon: '✅', done: true),
-  };
+  // 当前筛选
+  TodoPhase _filter = TodoPhase.all;
 
-  int _lastCheckKm = 180; // mock: 上次检查距现在180km
+  // 编辑模式
+  bool _isEditing = false;
+  final TextEditingController _addCtrl = TextEditingController();
+  TodoPhase _addPhase = TodoPhase.preRide;
 
-  final List<String> _purchases = ['内胎×1', '能量胶×6', '电解质冲剂×5'];
-  final TextEditingController _addPurchaseCtrl = TextEditingController();
+  bool _loaded = false;
+
+  // 预置出发前装备（首次使用时加载）
+  static const _defaultPreRideItems = [
+    ('头盔', true),
+    ('手套', true),
+    ('水壶×2', true),
+    ('内胎×2', false),
+    ('打气筒', true),
+    ('能量胶×3', false),
+    ('前灯', true),
+    ('尾灯', true),
+    ('骑行眼镜', null),
+    ('雨衣', true),
+  ];
+
+  static const _defaultPreRideBike = [
+    ('刹车检查', true),
+    ('胎压检查', true),
+    ('链条润油', false),
+    ('变速检查', true),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodos();
+  }
 
   @override
   void dispose() {
-    _addPurchaseCtrl.dispose();
+    _addCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTodos() async {
+    _prefs = await SharedPreferences.getInstance();
+    final saved = _prefs.getString('v75_todos');
+    if (saved != null) {
+      try {
+        final Map<String, dynamic> decoded = json.decode(saved);
+        for (final phase in TodoPhase.values.where((p) => p != TodoPhase.all)) {
+          final list = decoded[phase.name] as List<dynamic>?;
+          if (list != null) {
+            _todos[phase] = list.map((e) => TodoItem.fromJson(e)).toList();
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 首次使用：加载预置装备
+    if (_todos[TodoPhase.preRide]!.isEmpty) {
+      _todos[TodoPhase.preRide] = [
+        ..._defaultPreRideItems.map((e) => TodoItem(
+              text: e.$1,
+              phase: TodoPhase.preRide,
+              done: e.$2,
+              isDefault: true,
+            )),
+        ..._defaultPreRideBike.map((e) => TodoItem(
+              text: e.$1,
+              phase: TodoPhase.preRide,
+              done: e.$2,
+              isDefault: true,
+              category: 'bike',
+            )),
+      ];
+      _saveTodos();
+    }
+
+    setState(() => _loaded = true);
+  }
+
+  Future<void> _saveTodos() async {
+    final Map<String, dynamic> toSave = {};
+    for (final phase in TodoPhase.values.where((p) => p != TodoPhase.all)) {
+      toSave[phase.name] = _todos[phase]!.map((e) => e.toJson()).toList();
+    }
+    await _prefs.setString('v75_todos', json.encode(toSave));
+  }
+
+  void _toggleDone(TodoPhase phase, int index) {
+    setState(() {
+      _todos[phase]![index].done = !(_todos[phase]![index].done ?? false);
+    });
+    _saveTodos();
+  }
+
+  void _addTodo() {
+    final text = _addCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _todos[_addPhase]!.add(TodoItem(
+        text: text,
+        phase: _addPhase,
+        done: false,
+      ));
+    });
+    _addCtrl.clear();
+    _saveTodos();
+  }
+
+  void _deleteTodo(TodoPhase phase, int index) {
+    setState(() {
+      _todos[phase]!.removeAt(index);
+    });
+    _saveTodos();
+  }
+
+  void _resetPreRide() {
+    setState(() {
+      _todos[TodoPhase.preRide] = [
+        ..._defaultPreRideItems.map((e) => TodoItem(
+              text: e.$1,
+              phase: TodoPhase.preRide,
+              done: e.$2,
+              isDefault: true,
+            )),
+        ..._defaultPreRideBike.map((e) => TodoItem(
+              text: e.$1,
+              phase: TodoPhase.preRide,
+              done: e.$2,
+              isDefault: true,
+              category: 'bike',
+            )),
+      ];
+    });
+    _saveTodos();
+  }
+
+  int _getDoneCount(TodoPhase phase) {
+    return _todos[phase]?.where((t) => t.done == true).length ?? 0;
+  }
+
+  int _getTotalCount(TodoPhase phase) {
+    return _todos[phase]?.length ?? 0;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_loaded) {
+      return const Scaffold(
+        backgroundColor: AppConfig.bgMain,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppConfig.bgMain,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConfig.pageMargin),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCoreGear(),
-            const SizedBox(height: AppConfig.cardGap),
-            _buildBikeStatus(),
-            const SizedBox(height: AppConfig.cardGap),
-            _buildPurchases(),
-            const SizedBox(height: AppConfig.sectionGap),
-            _buildSkillEntry(),
-            const SizedBox(height: AppConfig.sectionGap),
-            _buildPostRideCollection(),
-          ],
-        ),
+      body: Column(
+        children: [
+          _buildProgressOverview(),
+          _buildFilterBar(),
+          _buildQuickAdd(),
+          Expanded(child: _buildTodoList()),
+        ],
       ),
     );
   }
 
   AppBar _buildAppBar() {
-    // 概览条
-    final total = _coreGear.length + _bikeStatus.length;
-    final ready = _coreGear.values.where((s) => s.done == true).length +
-        _bikeStatus.values.where((s) => s.done == true).length;
-    final needFix = _coreGear.values.where((s) => s.done == false).length +
-        _bikeStatus.values.where((s) => s.done == false).length;
-
     return AppBar(
       backgroundColor: AppConfig.cardBg,
-      title: const Text('出发前准备', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(52),
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, 10),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-          decoration: BoxDecoration(
-            color: needFix > 0 ? AppConfig.warningOrange.withOpacity(0.08) : AppConfig.primary.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-          ),
-          child: Row(
-            children: [
-              Text('$ready/$total 项已就绪', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: needFix > 0 ? AppConfig.warningOrange : AppConfig.primary)),
-              if (needFix > 0) ...[
-                const SizedBox(width: 8),
-                Text('$needFix 项需关注', style: const TextStyle(fontSize: 13, color: AppConfig.warningOrange)),
-              ],
-            ],
-          ),
-        ),
+      elevation: 0,
+      title: const Text(
+        '我的待办',
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppConfig.textPrimary),
       ),
+      actions: [
+        if (!_isEditing)
+          TextButton(
+            onPressed: () => setState(() => _isEditing = true),
+            child: const Text('编辑', style: TextStyle(fontSize: 14, color: AppConfig.primary)),
+          )
+        else
+          TextButton(
+            onPressed: () => setState(() => _isEditing = false),
+            child: const Text('完成', style: TextStyle(fontSize: 14, color: AppConfig.primary)),
+          ),
+      ],
     );
   }
 
-  // ===== 核心装备 =====
-  Widget _buildCoreGear() {
-    return _sectionCard(
-      '🛡️ 核心装备',
-      '每项可点击切换状态：✅已准备 → ⚠️需补充 → ⬜未确认',
-      Column(
-        children: _coreGear.entries.map((e) {
-          final state = e.value;
-          final icon = state.done == true ? '✅' : state.done == false ? '⚠️' : '⬜';
-          final color = state.done == true ? AppConfig.primary : state.done == false ? AppConfig.warningOrange : AppConfig.textSecondary;
-          return GestureDetector(
-            onTap: () => setState(() {
-              if (state.done == true) { state.done = false; state.icon = '⚠️'; }
-              else if (state.done == false) { state.done = null; state.icon = '⬜'; }
-              else { state.done = true; state.icon = '✅'; }
-            }),
+  Widget _buildProgressOverview() {
+    final phases = [TodoPhase.preRide, TodoPhase.duringRide, TodoPhase.postRide];
+    return Container(
+      padding: const EdgeInsets.all(AppConfig.pageMargin),
+      child: Row(
+        children: phases.map((phase) {
+          final done = _getDoneCount(phase);
+          final total = _getTotalCount(phase);
+          final pct = total > 0 ? done / total : 0.0;
+          return Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5))),
-              child: Row(children: [
-                Text(icon, style: TextStyle(fontSize: 16, color: color)),
-                const SizedBox(width: 10),
-                Expanded(child: Text(e.key, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
-                if (state.done == false && state.hint != null)
-                  Text(state.hint!, style: const TextStyle(fontSize: 11, color: AppConfig.warningOrange)),
-              ]),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                children: [
+                  Text(
+                    phase.label,
+                    style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary),
+                  ),
+                  const SizedBox(height: 6),
+                  Stack(
+                    children: [
+                      Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: AppConfig.divider,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: pct,
+                        child: Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppConfig.primary,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$done/$total',
+                    style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary),
+                  ),
+                ],
+              ),
             ),
           );
         }).toList(),
@@ -137,229 +270,118 @@ class _MyTodoPageState extends State<MyTodoPage> {
     );
   }
 
-  // ===== 车辆状态 =====
-  Widget _buildBikeStatus() {
-    // 超过200km自动提醒
-    final needRemind = _lastCheckKm > 200;
-
-    return _sectionCard(
-      '🔧 车辆状态',
-      '上次检查: ${_lastCheckKm}km 前${needRemind ? "（建议检查）" : ""}',
-      Column(
-        children: [
-          if (needRemind)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: AppConfig.warningOrange.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
-              child: const Row(children: [
-                Text('⚠️', style: TextStyle(fontSize: 14)),
-                SizedBox(width: 8),
-                Expanded(child: Text('超过200km未检查，建议检查车辆状态', style: TextStyle(fontSize: 12, color: AppConfig.warningOrange))),
-              ]),
-            ),
-          ..._bikeStatus.entries.map((e) {
-            final state = e.value;
-            final icon = state.done == true ? '✅' : state.done == false ? '⚠️' : '⬜';
-            final color = state.done == true ? AppConfig.primary : state.done == false ? AppConfig.warningOrange : AppConfig.textSecondary;
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: TodoPhase.values.map((phase) {
+            final selected = _filter == phase;
             return GestureDetector(
-              onTap: () => setState(() => state.done = !state.done!),
+              onTap: () => setState(() => _filter = phase),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5))),
-                child: Row(children: [
-                  Text(icon, style: TextStyle(fontSize: 16, color: color)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(e.key, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
-                  if (state.done == false && state.hint != null)
-                    Text(state.hint!, style: const TextStyle(fontSize: 11, color: AppConfig.warningOrange)),
-                ]),
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected ? AppConfig.primary : AppConfig.cardBg,
+                  borderRadius: BorderRadius.circular(AppConfig.tagRadius),
+                  border: Border.all(color: selected ? AppConfig.primary : AppConfig.divider),
+                ),
+                child: Text(
+                  phase.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: selected ? AppConfig.textInverse : AppConfig.textPrimary,
+                  ),
+                ),
               ),
             );
-          }),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 40,
-            child: OutlinedButton(
-              onPressed: () => setState(() {
-                _lastCheckKm = 0;
-                for (final s in _bikeStatus.values) { s.done = true; s.icon = '✅'; }
-              }),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppConfig.primary,
-                side: const BorderSide(color: AppConfig.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
-              ),
-              child: const Text('✅ 一键已检查', style: TextStyle(fontSize: 14)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===== 需要采购 =====
-  Widget _buildPurchases() {
-    return _sectionCard(
-      '📦 需要采购',
-      '上次消耗自动出现在这里',
-      Column(
-        children: [
-          ..._purchases.map((p) => Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5))),
-                child: Row(children: [
-                  const Text('🛒', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(p, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary))),
-                  GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NearbyPoiPage(category: '便利店'))),
-                    child: Text('🔍 附近购买', style: TextStyle(fontSize: 12, color: AppConfig.primary)),
-                  ),
-                ]),
-              )),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _addPurchaseCtrl,
-                decoration: const InputDecoration(
-                  hintText: '添加采购项...',
-                  hintStyle: TextStyle(fontSize: 13, color: AppConfig.textSecondary),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                final t = _addPurchaseCtrl.text.trim();
-                if (t.isNotEmpty) {
-                  setState(() => _purchases.add(t));
-                  _addPurchaseCtrl.clear();
-                }
-              },
-              child: const Text('添加', style: TextStyle(fontSize: 13)),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  // ===== 技能准备入口 =====
-  Widget _buildSkillEntry() {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CyclingKnowledgePage())),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppConfig.cardBg,
-          borderRadius: BorderRadius.circular(AppConfig.cardRadius),
-          boxShadow: AppConfig.cardShadow,
+          }).toList(),
         ),
-        child: const Row(children: [
-          Text('🔧', style: TextStyle(fontSize: 20)),
-          SizedBox(width: 10),
-          Expanded(child: Text('骑行维修须知', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary))),
-          Text('离线可用 →', style: TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
-        ]),
       ),
     );
   }
 
-  // ===== 骑行结束后采集 =====
-  Widget _buildPostRideCollection() {
-    return _sectionCard(
-      '📋 骑行结束后（三个问题，都可跳过）',
-      '',
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Q1
-          const Text('Q1: 本次消耗了什么？', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: ['内胎', '能量胶', '水', '其他'].map((item) => _choiceChip(item)).toList()),
-          const SizedBox(height: 16),
-          // Q2
-          const Text('Q2: 车辆状态如何？', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: ['正常', '需要检查', '需要维修'].map((item) => _choiceChip(item)).toList()),
-          const SizedBox(height: 16),
-          // Q3
-          const Text('Q3: 花了多少钱？（可选）', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: '金额',
-                  hintStyle: const TextStyle(fontSize: 13, color: AppConfig.textSecondary),
-                  prefixIcon: const Text('¥ ', style: TextStyle(fontSize: 14, color: AppConfig.textPrimary)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppConfig.inputRadius),
-                    borderSide: const BorderSide(color: AppConfig.divider),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                ),
-                style: const TextStyle(fontSize: 13),
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              height: 44,
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(side: const BorderSide(color: AppConfig.divider)),
-                child: const Text('跳过', style: TextStyle(fontSize: 13, color: AppConfig.textSecondary)),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: AppConfig.primaryBtnH,
-            child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('已保存，下次出发前会自动更新待办清单')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppConfig.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
-              ),
-              child: const Text('提交记录', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _choiceChip(String label) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppConfig.cardBg,
-          borderRadius: BorderRadius.circular(AppConfig.tagRadius),
-          border: Border.all(color: AppConfig.divider),
-        ),
-        child: Text(label, style: const TextStyle(fontSize: 13, color: AppConfig.textPrimary)),
-      ),
-    );
-  }
-
-  Widget _sectionCard(String title, String subtitle, Widget child) {
+  Widget _buildQuickAdd() {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(AppConfig.pageMargin),
+      child: Row(
+        children: [
+          // Phase selector
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: AppConfig.cardBg,
+              borderRadius: BorderRadius.circular(AppConfig.inputRadius),
+              border: Border.all(color: AppConfig.divider),
+            ),
+            child: DropdownButton<TodoPhase>(
+              value: _addPhase,
+              underline: const SizedBox(),
+              isDense: true,
+              items: [TodoPhase.preRide, TodoPhase.duringRide, TodoPhase.postRide]
+                  .map((p) => DropdownMenuItem(
+                        value: p,
+                        child: Text(p.label, style: const TextStyle(fontSize: 12)),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _addPhase = v ?? TodoPhase.preRide),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _addCtrl,
+              decoration: const InputDecoration(
+                hintText: '添加待办...',
+                hintStyle: TextStyle(fontSize: 14, color: AppConfig.textSecondary),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              style: const TextStyle(fontSize: 14),
+              onSubmitted: (_) => _addTodo(),
+            ),
+          ),
+          IconButton(
+            onPressed: _addTodo,
+            icon: const Icon(Icons.add, color: AppConfig.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodoList() {
+    final phasesToShow = _filter == TodoPhase.all
+        ? [TodoPhase.preRide, TodoPhase.duringRide, TodoPhase.postRide]
+        : [_filter];
+
+    return ListView(
+      padding: const EdgeInsets.all(AppConfig.pageMargin),
+      children: phasesToShow.map((phase) {
+        final todos = _todos[phase]!;
+        if (todos.isEmpty && _filter != TodoPhase.all) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(
+                '暂无${phase.label}',
+                style: const TextStyle(fontSize: 14, color: AppConfig.textSecondary),
+              ),
+            ),
+          );
+        }
+        return _buildPhaseSection(phase, todos);
+      }).toList(),
+    );
+  }
+
+  Widget _buildPhaseSection(TodoPhase phase, List<TodoItem> todos) {
+    if (todos.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppConfig.cardGap),
       decoration: BoxDecoration(
         color: AppConfig.cardBg,
         borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
@@ -368,23 +390,182 @@ class _MyTodoPageState extends State<MyTodoPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppConfig.textPrimary)),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(subtitle, style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
-          ],
-          const SizedBox(height: 14),
-          child,
+          // Header
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  phase.emoji,
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  phase.label,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary),
+                ),
+                const Spacer(),
+                Text(
+                  '${_getDoneCount(phase)}/${_getTotalCount(phase)}',
+                  style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          // Items
+          ...todos.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return _buildTodoItem(phase, idx, item);
+          }),
+          // Reset button for pre-ride
+          if (phase == TodoPhase.preRide && _isEditing)
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: OutlinedButton(
+                  onPressed: _resetPreRide,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppConfig.primary,
+                    side: const BorderSide(color: AppConfig.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConfig.buttonRadius),
+                    ),
+                  ),
+                  child: const Text('重置为默认清单', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTodoItem(TodoPhase phase, int index, TodoItem item) {
+    final done = item.done == true;
+    final needFix = item.done == false;
+
+    return Dismissible(
+      key: Key('${phase.name}_$index'),
+      direction: _isEditing ? DismissDirection.endToStart : DismissDirection.none,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: AppConfig.sosRed,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) => _deleteTodo(phase, index),
+      child: GestureDetector(
+        onTap: () => _toggleDone(phase, index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
+          ),
+          child: Row(
+            children: [
+              // Status icon
+              Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done
+                      ? AppConfig.primary.withOpacity(0.15)
+                      : needFix
+                          ? AppConfig.warningOrange.withOpacity(0.15)
+                          : Colors.transparent,
+                  border: Border.all(
+                    color: done
+                        ? AppConfig.primary
+                        : needFix
+                            ? AppConfig.warningOrange
+                            : AppConfig.divider,
+                    width: 1.5,
+                  ),
+                ),
+                child: done
+                    ? const Icon(Icons.check, size: 14, color: AppConfig.primary)
+                    : needFix
+                        ? const Text('!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppConfig.warningOrange))
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              // Text
+              Expanded(
+                child: Text(
+                  item.text,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: done ? AppConfig.textSecondary : AppConfig.textPrimary,
+                    decoration: done ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              // Category badge
+              if (item.category == 'bike')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppConfig.divider,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('车辆', style: TextStyle(fontSize: 10, color: AppConfig.textSecondary)),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _ItemState {
-  String icon;
-  bool? done;
-  String? hint;
+/// 待办阶段
+enum TodoPhase {
+  all('全部', '📋'),
+  preRide('出发前', '🛡️'),
+  duringRide('骑行中', '🚴'),
+  postRide('骑行后', '📝');
 
-  _ItemState({required this.icon, this.done, this.hint});
+  final String label;
+  final String emoji;
+  const TodoPhase(this.label, this.emoji);
+}
+
+/// 待办项
+class TodoItem {
+  final String text;
+  final TodoPhase phase;
+  bool? done;
+  final bool isDefault;
+  final String? category;
+
+  TodoItem({
+    required this.text,
+    required this.phase,
+    this.done,
+    this.isDefault = false,
+    this.category,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'phase': phase.name,
+        'done': done,
+        'isDefault': isDefault,
+        'category': category,
+      };
+
+  factory TodoItem.fromJson(Map<String, dynamic> json) => TodoItem(
+        text: json['text'] as String,
+        phase: TodoPhase.values.firstWhere((p) => p.name == json['phase']),
+        done: json['done'] as bool?,
+        isDefault: json['isDefault'] as bool? ?? false,
+        category: json['category'] as String?,
+      );
 }
