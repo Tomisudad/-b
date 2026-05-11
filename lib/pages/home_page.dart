@@ -11,6 +11,16 @@ import 'my_todo_page.dart';
 import 'weather_page.dart';
 import 'nearby_poi_page.dart';
 import 'cycling_knowledge_page.dart';
+import 'cycling_stats_page.dart';
+import 'my_achievements_page.dart';
+import 'trip_plan_page.dart';
+import 'partner_activity_page.dart';
+import 'favorite_routes_page.dart';
+import 'cycling_video_page.dart';
+import 'cycling_accounting_page.dart';
+import 'maintenance_reminder_page.dart';
+import 'golden_hour_page.dart';
+import 'cycling_advice_page.dart';
 
 // ===== V7.5 optional module pool =====
 enum HomeModule {
@@ -115,7 +125,17 @@ Widget? _modulePage(HomeModule m) {
     case HomeModule.myTodo: return const MyTodoPage();
     case HomeModule.weatherAlert: return const WeatherPage();
     case HomeModule.nearbyPoi: return const NearbyPoiPage();
+    case HomeModule.cyclingStats: return const CyclingStatsPage();
+    case HomeModule.myAchievements: return const MyAchievementsPage();
+    case HomeModule.tripPlan: return const TripPlanPage();
+    case HomeModule.partnerActivity: return const PartnerActivityPage();
     case HomeModule.hotRoutes: return const CyclingKnowledgePage();
+    case HomeModule.favoriteRoutes: return const FavoriteRoutesPage();
+    case HomeModule.cyclingVideo: return const CyclingVideoPage();
+    case HomeModule.cyclingAccounting: return const CyclingAccountingPage();
+    case HomeModule.maintenanceReminder: return const MaintenanceReminderPage();
+    case HomeModule.goldenHour: return const GoldenHourPage();
+    case HomeModule.cyclingAdvice: return const CyclingAdvicePage();
     default: return null;
   }
 }
