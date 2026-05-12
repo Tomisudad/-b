@@ -43,21 +43,41 @@ enum HomeModule {
   final String label;
   final bool pinned;
   const HomeModule(this.emoji, this.label, this.pinned);
+
+  Color get bgColor => switch (this) {
+    HomeModule.myTodo => AppConfig.primary,
+    HomeModule.weatherAlert => const Color(0xFFB0C4DE),
+    HomeModule.nearbyPoi => AppConfig.sosRed,
+    HomeModule.cyclingStats => AppConfig.primary,
+    HomeModule.myAchievements => const Color(0xFFF1C40F),
+    HomeModule.tripPlan => AppConfig.sosRed,
+    HomeModule.partnerActivity => AppConfig.primary,
+    HomeModule.hotRoutes => AppConfig.sosRed,
+    HomeModule.favoriteRoutes => const Color(0xFFF39C12),
+    HomeModule.cyclingVideo => const Color(0xFF9B59B6),
+    HomeModule.cyclingAccounting => AppConfig.warmGold,
+    HomeModule.maintenanceReminder => AppConfig.warningOrange,
+    HomeModule.goldenHour => AppConfig.warningOrange,
+    HomeModule.cyclingAdvice => AppConfig.drivePrimary,
+  };
 }
 
 const _prefKeyModules = 'v75_enabled_modules';
-const _prefKeyHotRoutes = 'v75_show_hot_routes';
 
 const List<HomeModule> _defaultModules = [
   HomeModule.myTodo,
   HomeModule.weatherAlert,
   HomeModule.nearbyPoi,
   HomeModule.cyclingStats,
+  HomeModule.myAchievements,
+  HomeModule.tripPlan,
+  HomeModule.partnerActivity,
   HomeModule.hotRoutes,
+  HomeModule.favoriteRoutes,
+  HomeModule.cyclingVideo,
+  HomeModule.cyclingAccounting,
   HomeModule.maintenanceReminder,
   HomeModule.goldenHour,
-  HomeModule.tripPlan,
-  HomeModule.favoriteRoutes,
   HomeModule.cyclingAdvice,
 ];
 
@@ -358,7 +378,7 @@ class _HomePageState extends State<HomePage> {
                 width: AppConfig.funcIconSize,
                 height: AppConfig.funcIconSize,
                 decoration: BoxDecoration(
-                  color: AppConfig.primary.withOpacity(0.05),
+                  color: m.bgColor.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(AppConfig.funcIconRadius),
                 ),
                 child: Center(child: Text(m.emoji, style: const TextStyle(fontSize: AppConfig.funcInnerIconSize))),
@@ -514,12 +534,14 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHotRouteCard(_HotRoute r) {
     return GestureDetector(
       onTap: () => _showRoutePreview(r),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 240,
         height: 160,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
           boxShadow: AppConfig.cardShadow,
+          border: const Border(bottom: BorderSide(color: AppConfig.divider, width: 0.5)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
@@ -556,9 +578,9 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        _statChip('❤️ ${_fmtCount(r.likes)}'),
+                        _statChip('👍 ${_fmtCount(r.likes)}'),
                         const SizedBox(width: 4),
-                        _statChip('🚴 ${_fmtCount(r.walkers)}'),
+                        _statChip('👣 ${_fmtCount(r.walkers)}人走过'),
                       ],
                     ),
                     const Spacer(),
@@ -616,7 +638,7 @@ class _HomePageState extends State<HomePage> {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Text(
-        '户外骑行存在一定风险，请根据自身体能选择合适路线，量力而行。遵守交通规则，佩戴头盔，安全第一。',
+        '户外骑行存在一定风险，请根据自身体能选择合适路线，量力而行。\n遵守交通规则，佩戴头盔，安全第一。',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: AppConfig.captionSize, color: AppConfig.textSecondary, height: 1.6),
       ),

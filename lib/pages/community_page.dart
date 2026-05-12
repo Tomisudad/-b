@@ -91,11 +91,14 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.small(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showPublishSheet(context),
-        backgroundColor: AppConfig.goldStart,
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppConfig.cyclePrimary,
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -270,7 +273,7 @@ class _User {
   const _User(this.name, this.level, this.posts);
 }
 
-enum _AttachType { route, gear, track, photo, medal }
+enum _AttachType { route, gear, track, photo }
 
 class _Attach {
   final _AttachType type;
@@ -281,10 +284,9 @@ class _Attach {
   factory _Attach.gear(String t, String s) => _Attach._(_AttachType.gear, t, s);
   factory _Attach.track(String s) => _Attach._(_AttachType.track, '轨迹记录', s);
   factory _Attach.photo(int n) => _Attach._(_AttachType.photo, '$n张照片', null);
-  factory _Attach.medal(String n, String d) => _Attach._(_AttachType.medal, n, d);
 
-  IconData get icon => switch (type) { _AttachType.route => Icons.route_outlined, _AttachType.gear => Icons.checklist_outlined, _AttachType.track => Icons.timeline_outlined, _AttachType.photo => Icons.photo_outlined, _AttachType.medal => Icons.emoji_events_outlined };
-  Color get color => switch (type) { _AttachType.route => AppConfig.cyclePrimary, _AttachType.gear => AppConfig.drivePrimary, _AttachType.track => AppConfig.motoPrimary, _AttachType.photo => AppConfig.textSecondary, _AttachType.medal => AppConfig.goldStart };
+  IconData get icon => switch (type) { _AttachType.route => Icons.route_outlined, _AttachType.gear => Icons.checklist_outlined, _AttachType.track => Icons.timeline_outlined, _AttachType.photo => Icons.photo_outlined };
+  Color get color => switch (type) { _AttachType.route => AppConfig.cyclePrimary, _AttachType.gear => AppConfig.drivePrimary, _AttachType.track => AppConfig.motoPrimary, _AttachType.photo => AppConfig.textSecondary };
 }
 
 class _Post {
@@ -298,11 +300,11 @@ class _Post {
   final List<_Attach> attachments;
   final List<String> tags;
 
-  _Post({required this.postId, required this.user, required this.body, required this.timeAgo, this.likes = 0, this.comments = 0, this.stars = 0, this.attachments = const [], this.tags = const [], this.postComments = const []});
+  _Post({required this.postId, required this.user, required this.body, required this.timeAgo, this.likes = 0, this.comments = 0, this.stars = 0, this.attachments = const [], this.tags = const []});
   int get _hotScore => likes + comments * 3 + stars * 5;
 
   /// V6.5 Fix 8: 关联评论数据（不参与排序/序列化）
-  final List<_Comment> postComments;
+  List<_Comment> postComments = const [];
 }
 
 /// V6.5 Fix 8: 评论数据模型

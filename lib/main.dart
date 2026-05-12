@@ -11,8 +11,6 @@ import 'services/no_moto_service.dart';
 import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 import 'app.dart';
-import 'pages/privacy_page.dart';
-import 'pages/user_agreement_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -285,22 +283,16 @@ class _SplashGateState extends State<SplashGate> with SingleTickerProviderStateM
                 const SizedBox(height: 20),
 
                 // 政策链接
-                Row(
+                const Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPage())),
-                      child: const Text(
-                        '《隐私政策》',
-                        style: TextStyle(fontSize: 13, color: AppConfig.cyclePrimary, fontWeight: FontWeight.w500),
-                      ),
+                    Text(
+                      '《隐私政策》',
+                      style: TextStyle(fontSize: 13, color: AppConfig.textSecondary, fontWeight: FontWeight.w500),
                     ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserAgreementPage())),
-                      child: const Text(
-                        '《用户协议》',
-                        style: TextStyle(fontSize: 13, color: AppConfig.cyclePrimary, fontWeight: FontWeight.w500),
-                      ),
+                    SizedBox(width: 16),
+                    Text(
+                      '《用户协议》',
+                      style: TextStyle(fontSize: 13, color: AppConfig.textSecondary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),

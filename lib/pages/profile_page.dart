@@ -89,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
     ];
     return AnimatedOpacity(opacity: _gridVisible ? 1 : 0, duration: const Duration(milliseconds: 500), child: GridView.builder(
       shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.85),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.85),
       itemCount: items.length,
       itemBuilder: (_, i) {
         final item = items[i];

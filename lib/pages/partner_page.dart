@@ -58,33 +58,6 @@ class _PartnerPageState extends State<PartnerPage> {
     _Buddy('山野骑客', OutdoorScenario.cycle, 2.3, _Status.inGroup, '环太湖', '周末环湖，不求速度求风景。已有2人，缺1人。', ['装备齐全', '对讲机'], _TravelGoal.scenery, time: '周日 6:30', memberInfo: '2/4人'),
     _Buddy('长途骑士', OutdoorScenario.cycle, 5.0, _Status.planning, '川藏线', '计划下月川藏线，找有经验队友。一起走不孤单。', ['长途', '经验丰富'], _TravelGoal.longHaul, time: '待定', memberInfo: '独行'),
     _Buddy('爬坡达人', OutdoorScenario.cycle, 3.1, _Status.planning, '龙井北坡', '龙井北坡5趟连爬，找配速相当搭子。心率不过165的勿扰。', ['公路车', '功率计'], _TravelGoal.challenge, time: '周六 5:30', memberInfo: '独行'),
-    _Buddy('晨曦骑者', OutdoorScenario.cycle, 1.2, _Status.planning, null, '每天早上5点出发，骑到7点回家。风雨无阻。', ['晨骑', '固定'], _TravelGoal.challenge, time: '每日 5:00', memberInfo: '独行'),
-    _Buddy('湖畔漫游', OutdoorScenario.cycle, 4.5, _Status.inGroup, '千岛湖', '千岛湖环线，边骑边拍。已有4人，欢迎加入。', ['摄影', '休闲'], _TravelGoal.scenery, time: '下周六', memberInfo: '4/6人'),
-    _Buddy('铁腿阿强', OutdoorScenario.cycle, 2.8, _Status.solo, null, '日骑200公里无压力。找同样能熬的队友。', ['耐力', '铁三'], _TravelGoal.challenge, time: '随时', memberInfo: '独行'),
-    _Buddy('古城探路', OutdoorScenario.cycle, 8.0, _Status.planning, '徽杭古道', '徽杭古道骑行，2天1夜。找有露营装备的。', ['古道', '露营'], _TravelGoal.explore, time: '5月中旬', memberInfo: '2/4人'),
-    _Buddy('夜猫子骑', OutdoorScenario.cycle, 1.0, _Status.planning, null, '晚上9点后夜骑，避开人流。安全第一。', ['夜骑', '灯光'], _TravelGoal.social, time: '每晚 21:00', memberInfo: '独行'),
-    // ===== 摩旅场景 (10人) =====
-    _Buddy('摩旅老炮', OutdoorScenario.moto, 3.5, _Status.inGroup, '独库公路', '独库公路穿越，已有3车，还差1车。', ['大排', '越野'], _TravelGoal.longHaul, time: '6月初', memberInfo: '3/4车'),
-    _Buddy('城市浪人', OutdoorScenario.moto, 1.8, _Status.planning, null, '周末周边小摩旅，100公里内当天来回。', ['小排', '日归'], _TravelGoal.social, time: '周六', memberInfo: '独行'),
-    _Buddy('高原追梦', OutdoorScenario.moto, 12.0, _Status.planning, '西藏', '西藏摩旅，预计20天。找能修车的队友。', ['进藏', '修车'], _TravelGoal.longHaul, time: '7月', memberInfo: '1/3车'),
-    _Buddy('山路弯王', OutdoorScenario.moto, 6.2, _Status.solo, '四明山', '四明山跑山，追求弯道乐趣。不飙车。', ['跑山', '弯道'], _TravelGoal.challenge, time: '周日 6:00', memberInfo: '独行'),
-    _Buddy('海岸线骑士', OutdoorScenario.moto, 9.5, _Status.planning, '舟山环岛', '舟山环岛骑行，吹海风看日落。', ['海景', '岛骑'], _TravelGoal.scenery, time: '下周', memberInfo: '2/4车'),
-    _Buddy('复古骑士', OutdoorScenario.moto, 2.0, _Status.planning, null, '骑复古车，主打颜值和休闲。找同好。', ['复古', '巡航'], _TravelGoal.social, time: '周末', memberInfo: '独行'),
-    _Buddy('边境探索', OutdoorScenario.moto, 15.0, _Status.planning, '中缅边境', '中缅边境线骑行，探索小众路线。', ['边境', '小众'], _TravelGoal.explore, time: '待定', memberInfo: '独行'),
-    _Buddy('沙漠穿越', OutdoorScenario.moto, 20.0, _Status.inGroup, '库布齐', '库布齐沙漠穿越，已有2车，找拉力车。', ['沙漠', '拉力'], _TravelGoal.challenge, time: '9月', memberInfo: '2/4车'),
-    _Buddy('古镇巡游', OutdoorScenario.moto, 4.0, _Status.planning, '乌镇', '江南古镇串烧，边骑边玩。', ['古镇', '休闲'], _TravelGoal.scenery, time: '5月底', memberInfo: '独行'),
-    _Buddy('新手上路', OutdoorScenario.moto, 0.5, _Status.planning, null, '刚拿驾照，找老司机带带。周末短途。', ['新手', '求带'], _TravelGoal.social, time: '周末', memberInfo: '独行'),
-    // ===== 自驾场景 (10人) =====
-    _Buddy('自驾达人', OutdoorScenario.drive, 8.0, _Status.inGroup, '青海湖', '青海湖环线自驾，已有2车，还差1车。', ['SUV', '摄影'], _TravelGoal.scenery, time: '7月中旬', memberInfo: '2/3车'),
-    _Buddy('房车旅行', OutdoorScenario.drive, 15.0, _Status.planning, '新疆', '新疆房车环线，预计30天。找同行。', ['房车', '长途'], _TravelGoal.longHaul, time: '6月', memberInfo: '1/2车'),
-    _Buddy('周末越野', OutdoorScenario.drive, 5.5, _Status.planning, '浙西大峡谷', '浙西越野，需四驱车。已有2车。', ['越野', '四驱'], _TravelGoal.challenge, time: '周六', memberInfo: '2/4车'),
-    _Buddy('美食猎手', OutdoorScenario.drive, 3.2, _Status.planning, null, '周末周边觅食，当天来回。找吃货同行。', ['美食', '日归'], _TravelGoal.social, time: '周日', memberInfo: '独行'),
-    _Buddy('秘境探索', OutdoorScenario.drive, 25.0, _Status.planning, '川西', '川西秘境探索，非铺装路面多。', ['秘境', '硬派'], _TravelGoal.explore, time: '国庆', memberInfo: '独行'),
-    _Buddy('海岛自驾', OutdoorScenario.drive, 10.0, _Status.inGroup, '海南环岛', '海南环岛自驾，已有3车。', ['海岛', '休闲'], _TravelGoal.scenery, time: '春节', memberInfo: '3/4车'),
-    _Buddy('亲子时光', OutdoorScenario.drive, 2.0, _Status.planning, null, '带娃周边游，找同样带娃的家庭。', ['亲子', '短途'], _TravelGoal.social, time: '周末', memberInfo: '2大1小'),
-    _Buddy('戈壁穿越', OutdoorScenario.drive, 30.0, _Status.planning, '敦煌', '戈壁无人区穿越，需卫星电话。', ['无人区', '硬核'], _TravelGoal.challenge, time: '10月', memberInfo: '1/3车'),
-    _Buddy('古镇慢游', OutdoorScenario.drive, 6.0, _Status.solo, null, '江南古镇深度游，不赶时间。', ['古镇', '慢游'], _TravelGoal.scenery, time: '随时', memberInfo: '独行'),
-    _Buddy('边境公路', OutdoorScenario.drive, 35.0, _Status.planning, 'G219', 'G219边境公路自驾，找队友分摊油费。', ['边境', '国道'], _TravelGoal.longHaul, time: '明年', memberInfo: '独行'),
   ];
 
   // V5.5: Sort by goal match > scene match > distance
@@ -118,6 +91,7 @@ class _PartnerPageState extends State<PartnerPage> {
         ],
       ),
       body: Column(children: [
+        _buildRecruitButton(),
         _buildSceneFilter(),
         _buildGoalFilter(),
         Expanded(
@@ -298,6 +272,31 @@ class _PartnerPageState extends State<PartnerPage> {
   ]));
 
   // -- 搭子详情 --
+
+  Widget _buildRecruitButton() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 12, AppConfig.pageMargin, 8),
+      child: Material(
+        color: AppConfig.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _showCreateTeam,
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              border: Border.all(color: AppConfig.cyclePrimary, width: 1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text('＋ 发布组队招募', style: TextStyle(fontSize: 14, color: AppConfig.cyclePrimary, fontWeight: FontWeight.w500)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   void _showBuddyDetail(_Buddy buddy) {
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,

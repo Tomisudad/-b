@@ -43,10 +43,10 @@ extension _EquipStatusX on _EquipStatus {
 
 class _EquipItem {
   String name;
-  _EquipStatus status;
+  _EquipStatus status = _EquipStatus.unchecked;
   bool isDurable;
   int usedCount; // 消耗品已用次数
-  _EquipItem({required this.name, this.status = _EquipStatus.unchecked, this.isDurable = true, this.usedCount = 0});
+  _EquipItem({required this.name, this.isDurable = true, this.usedCount = 0});
 }
 
 class _Checklist {

@@ -1371,9 +1371,9 @@ class _Waypoint {
   double x, y;
   String? note;
   String? supplyType;
-  bool isSupplyPoint;
+  bool isSupplyPoint = false;
 
-  _Waypoint({required this.x, required this.y, this.note, this.supplyType, this.isSupplyPoint = false});
+  _Waypoint({required this.x, required this.y, this.note, this.supplyType});
 }
 
 // ===== 路线预览绘制 =====
