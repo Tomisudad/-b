@@ -104,10 +104,10 @@ class _HotRoute {
 }
 
 const _hotRoutes = [
-  _HotRoute(name: '西湖环湖经典', likes: 2341, walkers: 890, stars: 4.8, distanceKm: 12.5, climb: 80, durationMinutes: 50, difficulty: '新手'),
-  _HotRoute(name: '千岛湖绿道', likes: 1890, walkers: 620, stars: 4.9, distanceKm: 35.0, climb: 350, durationMinutes: 150, difficulty: '进阶'),
-  _HotRoute(name: '龙井北坡', likes: 1560, walkers: 410, stars: 4.6, distanceKm: 2.5, climb: 220, durationMinutes: 25, difficulty: '资深'),
-  _HotRoute(name: '赣北G318段', likes: 3200, walkers: 150, stars: 4.7, distanceKm: 180.0, climb: 3200, durationMinutes: 720, difficulty: '挑战'),
+  _HotRoute(name: '西湖环湖经典', likes: 2341, walkers: 146, stars: 4.8, distanceKm: 12.5, climb: 80, durationMinutes: 50, difficulty: '新手'),
+  _HotRoute(name: '千岛湖绿道', likes: 1890, walkers: 118, stars: 4.9, distanceKm: 35.0, climb: 350, durationMinutes: 150, difficulty: '进阶'),
+  _HotRoute(name: '龙井北坡', likes: 1560, walkers: 92, stars: 4.6, distanceKm: 2.5, climb: 220, durationMinutes: 25, difficulty: '资深'),
+  _HotRoute(name: '赣北G318段', likes: 3200, walkers: 188, stars: 4.7, distanceKm: 180.0, climb: 3200, durationMinutes: 720, difficulty: '挑战'),
 ];
 
 Color _diffColor(String d) {
@@ -292,9 +292,14 @@ class _HomePageState extends State<HomePage> {
       padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _fixedEntries.map((e) => GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: e.builder)),
-          child: Container(
+        children: List.generate(_fixedEntries.length, (i) {
+          final e = _fixedEntries[i];
+          final List<Color> gradColors = [
+            [const Color(0x0D2ECC71), const Color(0x052ECC71)], // green
+            [const Color(0x0D3498DB), const Color(0x053498DB)], // blue
+            [const Color(0x0DE67E22), const Color(0x05E67E22)], // orange
+          ][i];
+          return Container(
             width: AppConfig.fixedCardW,
             height: AppConfig.fixedCardH,
             decoration: BoxDecoration(
@@ -302,26 +307,32 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
               boxShadow: AppConfig.cardShadow,
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: AppConfig.fixedEntrySize,
-                  height: AppConfig.fixedEntrySize,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [Color(0x0D2ECC71), Color(0x052ECC71)],
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppConfig.cardRadiusLg),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: e.builder)),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: AppConfig.fixedEntrySize,
+                      height: AppConfig.fixedEntrySize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(colors: gradColors),
+                      ),
+                      child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: AppConfig.fixedIconSize))),
                     ),
-                  ),
-                  child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: AppConfig.fixedIconSize))),
+                    const SizedBox(height: 6),
+                    Text(e.label, style: const TextStyle(fontSize: AppConfig.captionSize, color: AppConfig.textPrimary, fontWeight: FontWeight.w500)),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(e.label, style: const TextStyle(fontSize: AppConfig.captionSize, color: AppConfig.textPrimary, fontWeight: FontWeight.w500)),
-              ],
+              ),
             ),
-          ),
-        )).toList(),
+          );
+        }),
       ),
     );
   }

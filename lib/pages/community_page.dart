@@ -46,7 +46,7 @@ class _CommunityPageState extends State<CommunityPage> {
         _Attach.gear('自驾露营装备', '11项装备'),
       ], tags: ['露营', '自驾', '浙江']),
     // V6.1: 替换为骑摄天下 (1205/42/98)
-      _Post(postId: 'p7', user: _User('骑摄天下', 'Lv.28', 680), body: '太湖日落，美到窒息。环湖骑一圈，东山半岛的光影绝了。相机根本停不下来 📸', timeAgo: '昨天', likes: 1205, comments: 98, stars: 42, attachments: [
+      _Post(postId: 'p7', user: _User('骑摄天下', 'Lv.28', 680), body: '太湖日落，美到窒息。环湖骑一圈，东山半岛的光影绝了。相机根本停不下来 📸', timeAgo: '昨天', likes: 1205, comments: 152, stars: 42, attachments: [
         _Attach.route('太湖东山半岛', '28km · 新手 · 150m爬升'),
         _Attach.photo(9),
       ], tags: ['骑行', '太湖', '摄影']),
