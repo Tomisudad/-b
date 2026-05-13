@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 去野 - 骑行深度定制版 V7.4
+/// 去野 - 骑行深度定制版 V7.6
 class AppConfig {
   AppConfig._();
 
@@ -10,11 +10,12 @@ class AppConfig {
   static const String pageTitle = '去野 | 去野，去骑行';
   static const List<String> sloganPool = [
     '去野，去骑行',
-    '下坡注意控制车速，安全第一',
-    '出发前检查胎压和刹车',
     '每一次踩踏，都是对生活的热爱',
     '你走过的路，都在脚下发光',
     '找到你的踏频，找到你的节奏',
+    '下坡控制车速，安全第一',
+    '出发前检查胎压和刹车',
+    '爬坡如人生，坚持就是胜利',
   ];
   static const int sloganIntervalMs = 3000;
   static const int sloganFadeMs = 500;
@@ -47,10 +48,11 @@ class AppConfig {
   // ===== 文字 =====
   static const Color textPrimary = Color(0xFF1A1A2E);
   static const Color textSecondary = Color(0xFF9A9A9F);
+  static const Color textBody = Color(0xFF2C3E50);    // 正文14sp
   static const Color textInverse = Color(0xFFFFFFFF);
 
   // ===== 分割线 =====
-  static const Color divider = Color(0xFFEDEDED);
+  static const Color divider = Color(0xFFEDEDED);  // 0.5px
 
   // ===== 毛玻璃 =====
   static const double glassBlur = 20.0;
@@ -153,11 +155,13 @@ class AppConfig {
         ),
       ];
 
-  static const double pressScale = 0.98;
+  static const double pressScale = 0.97;   // V7.6 卡片按压缩放
 
   // ===== 交互动画 =====
   static const int animMsDefault = 200;
   static const int animMsPageTrans = 300;
+  static const int animMsBtnBounce = 300;  // 按钮弹性 0.95→1.0
+  static const int animMsPanelSlide = 350; // 底部面板升起 ease-out
 
   // ===== 场景下拉 =====
   static const double sceneDropItemH = 44.0;

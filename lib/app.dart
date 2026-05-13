@@ -26,8 +26,15 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   late AnimationController _btnBounceCtrl;
   late Animation<double> _btnBounceAnim;
 
-  // V7.3 底部导航
+  // V7.6 底部导航 — 每tab独立色
   static const _labels = ['首页', '搭子', '', '社区', '我的'];
+  static const _tabColors = [
+    AppConfig.cyclePrimary,
+    AppConfig.cyclePrimary,
+    AppConfig.goldStart,
+    AppConfig.cyclePrimary,
+    AppConfig.warmGold,
+  ];
   static const _icons = [
     Icons.door_front_door_outlined,
     Icons.people_outline_rounded,
@@ -183,7 +190,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
 
   Widget _buildNavItem(int index) {
     final isSelected = _currentIndex == index;
-    final color = isSelected ? AppConfig.primary : AppConfig.textSecondary;
+    final color = isSelected ? _tabColors[index] : AppConfig.textSecondary;
     final icon = isSelected ? _activeIcons[index] : _icons[index];
     return Expanded(
       child: GestureDetector(
@@ -225,7 +232,7 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                     Container(
                       width: 20, height: 2,
                       decoration: BoxDecoration(
-                        gradient: goldGradient,
+                        color: _tabColors[index],
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),

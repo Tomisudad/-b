@@ -46,26 +46,27 @@ class PartnerPage extends StatefulWidget {
 }
 
 class _PartnerPageState extends State<PartnerPage> {
-  OutdoorScenario? _filterScene;
+  String? _filterSceneType;  // V7.6: 公路/山地/长途/休闲
   _TravelGoal? _filterGoal;
+  String? _filterPace;       // V7.6: <20/20-25/25-30/>30
   bool _mapView = false;
 
-  // V6.5 mock: 30 条搭子数据，覆盖三种场景、五种目标
+  // V7.6: 纯骑行5条搭子数据
   static final List<_Buddy> _buddies = [
     // ===== 骑行场景 (10人) =====
-    _Buddy('周末骑士', OutdoorScenario.cycle, 0.8, _Status.planning, null, '每周六环西湖，固定活动。来了就能跟上。', ['入门车', '头盔'], _TravelGoal.social, time: '周六 7:00', memberInfo: '已有3人'),
-    _Buddy('骑行小白', OutdoorScenario.cycle, 1.5, _Status.planning, null, '新手求带！周末西湖周边随便骑骑。', ['新手', '求带'], _TravelGoal.social, time: '周六 8:30', memberInfo: '独行'),
-    _Buddy('山野骑客', OutdoorScenario.cycle, 2.3, _Status.inGroup, '环太湖', '周末环湖，不求速度求风景。已有2人，缺1人。', ['装备齐全', '对讲机'], _TravelGoal.scenery, time: '周日 6:30', memberInfo: '2/4人'),
-    _Buddy('长途骑士', OutdoorScenario.cycle, 5.0, _Status.planning, '川藏线', '计划下月川藏线，找有经验队友。一起走不孤单。', ['长途', '经验丰富'], _TravelGoal.longHaul, time: '待定', memberInfo: '独行'),
-    _Buddy('爬坡达人', OutdoorScenario.cycle, 3.1, _Status.planning, '龙井北坡', '龙井北坡5趟连爬，找配速相当搭子。心率不过165的勿扰。', ['公路车', '功率计'], _TravelGoal.challenge, time: '周六 5:30', memberInfo: '独行'),
+    _Buddy('周末骑士', OutdoorScenario.cycle, 0.8, _Status.planning, null, '每周六环西湖，固定活动。来了就能跟上。', ['入门车', '头盔'], _TravelGoal.social, time: '周六 7:00', memberInfo: '已有3人', sceneType: '公路', pace: '25-30'),
+    _Buddy('骑行小白', OutdoorScenario.cycle, 1.5, _Status.planning, null, '新手求带！周末西湖周边随便骑骑。', ['新手', '求带'], _TravelGoal.social, time: '周六 8:30', memberInfo: '独行', sceneType: '休闲', pace: '<20'),
+    _Buddy('山野骑客', OutdoorScenario.cycle, 2.3, _Status.inGroup, '环太湖', '周末环湖，不求速度求风景。已有2人，缺1人。', ['装备齐全', '对讲机'], _TravelGoal.scenery, time: '周日 6:30', memberInfo: '2/4人', sceneType: '山地', pace: '20-25'),
+    _Buddy('长途骑士', OutdoorScenario.cycle, 5.0, _Status.planning, '川藏线', '计划下月川藏线，找有经验队友。一起走不孤单。', ['长途', '经验丰富'], _TravelGoal.longHaul, time: '待定', memberInfo: '独行', sceneType: '长途', pace: '20-25'),
+    _Buddy('爬坡达人', OutdoorScenario.cycle, 3.1, _Status.planning, '龙井北坡', '龙井北坡5趟连爬，找配速相当搭子。心率不过165的勿扰。', ['公路车', '功率计'], _TravelGoal.challenge, time: '周六 5:30', memberInfo: '独行', sceneType: '公路', pace: '>30'),
   ];
 
-  // V5.5: Sort by goal match > scene match > distance
+  // V7.6: Sort by goal match > distance > recency
   List<_Buddy> get _filtered {
     var list = _buddies.toList();
-    if (_filterScene != null) list = list.where((b) => b.scene == _filterScene).toList();
+    if (_filterSceneType != null) list = list.where((b) => b.sceneType == _filterSceneType).toList();
     if (_filterGoal != null) list = list.where((b) => b.goal == _filterGoal).toList();
-    // Distance-based sort as default tiebreaker
+    if (_filterPace != null) list = list.where((b) => b.pace == _filterPace).toList();
     list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
     return list;
   }
@@ -94,6 +95,7 @@ class _PartnerPageState extends State<PartnerPage> {
         _buildRecruitButton(),
         _buildSceneFilter(),
         _buildGoalFilter(),
+        _buildPaceFilter(),
         Expanded(
           child: buddies.isEmpty
               ? _emptyState()
@@ -108,23 +110,47 @@ class _PartnerPageState extends State<PartnerPage> {
     );
   }
 
-  // -- 场景筛选 --
+  // -- 场景筛选 V7.6 (纯骑行类型) --
   Widget _buildSceneFilter() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, 6),
-      child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
-        _filterChip('全部', _filterScene == null, () => setState(() => _filterScene = null)),
+      child: Row(children: [
+        const Text('场景', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+        const SizedBox(width: 8),
+        _filterChip('全部', _filterSceneType == null, () => setState(() => _filterSceneType = null)),
         const SizedBox(width: 6),
-        _filterChip('🚴 骑行', _filterScene == OutdoorScenario.cycle, () => setState(() => _filterScene = OutdoorScenario.cycle)),
+        _filterChip('公路', _filterSceneType == '公路', () => setState(() => _filterSceneType = '公路')),
         const SizedBox(width: 6),
-        _filterChip('🏍️ 摩旅', _filterScene == OutdoorScenario.moto, () => setState(() => _filterScene = OutdoorScenario.moto)),
+        _filterChip('山地', _filterSceneType == '山地', () => setState(() => _filterSceneType = '山地')),
         const SizedBox(width: 6),
-        _filterChip('🚗 自驾', _filterScene == OutdoorScenario.drive, () => setState(() => _filterScene = OutdoorScenario.drive)),
-      ])),
+        _filterChip('长途', _filterSceneType == '长途', () => setState(() => _filterSceneType = '长途')),
+        const SizedBox(width: 6),
+        _filterChip('休闲', _filterSceneType == '休闲', () => setState(() => _filterSceneType = '休闲')),
+      ]),
     );
   }
 
-  // -- 目标筛选 --
+  // -- 配速筛选 V7.6 --
+  Widget _buildPaceFilter() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, 10),
+      child: Row(children: [
+        const Text('配速', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
+        const SizedBox(width: 8),
+        _filterChip('全部', _filterPace == null, () => setState(() => _filterPace = null)),
+        const SizedBox(width: 6),
+        _filterChip('<20', _filterPace == '<20', () => setState(() => _filterPace = '<20')),
+        const SizedBox(width: 6),
+        _filterChip('20-25', _filterPace == '20-25', () => setState(() => _filterPace = '20-25')),
+        const SizedBox(width: 6),
+        _filterChip('25-30', _filterPace == '25-30', () => setState(() => _filterPace = '25-30')),
+        const SizedBox(width: 6),
+        _filterChip('>30', _filterPace == '>30', () => setState(() => _filterPace = '>30')),
+      ]),
+    );
+  }
+
+      // -- V7.6 骑行目标筛选 --
   Widget _buildGoalFilter() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppConfig.pageMargin, 0, AppConfig.pageMargin, 10),
@@ -479,7 +505,9 @@ class _Buddy {
   final String desc;
   final List<String> tags;
   final _TravelGoal goal;
-  final String time;       // V6.1: 出行时间
-  final String memberInfo;  // V6.1: "独行" / "已有3人" / "2/4人"
-  const _Buddy(this.name, this.scene, this.distanceKm, this.status, this.route, this.desc, this.tags, this.goal, {this.time = '', this.memberInfo = '独行'});
+  final String time;
+  final String memberInfo;
+  final String sceneType;   // V7.6: 公路/山地/长途/休闲
+  final String pace;         // V7.6: <20/20-25/25-30/>30
+  const _Buddy(this.name, this.scene, this.distanceKm, this.status, this.route, this.desc, this.tags, this.goal, {this.time = '', this.memberInfo = '独行', this.sceneType = '', this.pace = ''});
 }

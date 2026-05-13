@@ -93,10 +93,10 @@ class _CommunityPageState extends State<CommunityPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showPublishSheet(context),
-        backgroundColor: AppConfig.cyclePrimary,
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shape: const CircleBorder(side: BorderSide(color: AppConfig.cyclePrimary, width: 2)),
+        child: const Icon(Icons.edit, color: AppConfig.cyclePrimary, size: 24),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
@@ -142,7 +142,7 @@ class _CommunityPageState extends State<CommunityPage> {
           ])),
         ]),
         const SizedBox(height: 10),
-        Text(post.body, style: const TextStyle(fontSize: 14, color: AppConfig.textPrimary, height: 1.6)),
+        Text(post.body, style: const TextStyle(fontSize: 14, color: AppConfig.textBody, height: 1.5)),
         if (post.tags.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(spacing: 4, runSpacing: 4, children: post.tags.map((t) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: AppConfig.goldStart.withOpacity(0.06), borderRadius: BorderRadius.circular(4)), child: Text('#$t', style: const TextStyle(fontSize: 11, color: AppConfig.goldStart)))).toList()),

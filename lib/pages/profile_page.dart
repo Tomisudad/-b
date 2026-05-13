@@ -110,9 +110,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Row(children: [Text('足迹地图', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)), SizedBox(width: 6), Text('23个区县', style: TextStyle(fontSize: 12, color: AppConfig.textSecondary))]),
       const SizedBox(height: 10),
-      Container(height: 140, decoration: BoxDecoration(color: AppConfig.drivePrimary.withOpacity(0.04), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConfig.drivePrimary.withOpacity(0.1))), child: Center(child: Text('中国地图 · 23区县已点亮', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.drivePrimary.withOpacity(0.6))))),
+      Container(height: 140, decoration: BoxDecoration(color: AppConfig.primary.withOpacity(0.04), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppConfig.primary.withOpacity(0.1))), child: Center(child: Text('中国地图 · 23区县已点亮', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppConfig.primary.withOpacity(0.6))))),
       const SizedBox(height: 8),
-      Wrap(spacing: 4, runSpacing: 4, children: [('杭州·西湖'), ('杭州·临安'), ('湖州·德清'), ('黄山·歙县'), ('宣城·绩溪'), ('苏州·吴中'), ('湖州·安吉'), ('南京·江宁')].map((n) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: AppConfig.drivePrimary.withOpacity(0.06), borderRadius: BorderRadius.circular(4), border: Border.all(color: AppConfig.drivePrimary.withOpacity(0.1))), child: Text(n, style: const TextStyle(fontSize: 10, color: AppConfig.drivePrimary)))).toList()),
+      Wrap(spacing: 4, runSpacing: 4, children: [('杭州·西湖'), ('杭州·临安'), ('湖州·德清'), ('黄山·歙县'), ('宣城·绩溪'), ('苏州·吴中'), ('湖州·安吉'), ('南京·江宁')].map((n) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: AppConfig.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(4), border: Border.all(color: AppConfig.primary.withOpacity(0.1))), child: Text(n, style: TextStyle(fontSize: 10, color: AppConfig.primary)))).toList()),
     ]));
   }
 
@@ -120,10 +120,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('经典路线进度', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
       const SizedBox(height: 10),
-      _prog('G318川藏线', 0.12, AppConfig.drivePrimary),
-      _prog('青海湖环湖', 0.65, AppConfig.cyclePrimary),
-      _prog('独库公路', 0.00, AppConfig.motoPrimary),
-      _prog('千岛湖绿道', 1.00, AppConfig.cyclePrimary),
+      _prog('G318川藏线', 0.12, AppConfig.warningOrange),
+      _prog('青海湖环湖', 0.65, AppConfig.primary),
+      _prog('独库公路', 0.00, AppConfig.deepGreen),
+      _prog('千岛湖绿道', 1.00, AppConfig.primary),
     ]));
   }
 
@@ -140,11 +140,11 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(children: [
       _setting(Icons.security_outlined, '账号安全', () {}),
       _setting(Icons.map_outlined, '离线地图管理', () {}),
-      _setting(Icons.tune, '默认出行场景', () {}, right: '骑行'),
       _setting(Icons.notifications_outlined, '通知设置', () {}),
-      _setting(Icons.privacy_tip_outlined, '隐私设置', () {}),
+      _setting(Icons.privacy_tip_outlined, '隐私管理', () {}),
+      _setting(Icons.build_outlined, '骑行维修须知', () {}),
       _setting(Icons.storage_outlined, '缓存管理', () {}, right: '32MB'),
-      _setting(Icons.info_outlined, '关于去野', () {}, right: 'v5.2.0'),
+      _setting(Icons.info_outlined, '关于去野', () {}, right: 'v7.6.0'),
     ]);
   }
 
