@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../config/app_config.dart';
+import '../data/routes.dart';
+import '../models/route_model.dart';
+import '../widgets/network_banner.dart';
 import '../widgets/top_bar.dart';
 import 'route_plan_page.dart';
 import 'track_list_page.dart';
@@ -20,7 +23,7 @@ import 'cycling_accounting_page.dart';
 import 'maintenance_reminder_page.dart';
 import 'golden_hour_page.dart';
 import 'cycling_advice_page.dart';
-import 'hot_routes_page.dart';
+import 'departure_page.dart';
 
 // ===== V7.5 optional module pool =====
 enum HomeModule {
@@ -45,20 +48,20 @@ enum HomeModule {
   const HomeModule(this.emoji, this.label, this.pinned);
 
   Color get bgColor => switch (this) {
-    HomeModule.myTodo => AppConfig.primary,
-    HomeModule.weatherAlert => const Color(0xFFB0C4DE),
-    HomeModule.nearbyPoi => AppConfig.sosRed,
-    HomeModule.cyclingStats => AppConfig.primary,
-    HomeModule.myAchievements => const Color(0xFFF1C40F),
-    HomeModule.tripPlan => AppConfig.sosRed,
-    HomeModule.partnerActivity => AppConfig.primary,
-    HomeModule.hotRoutes => AppConfig.sosRed,
-    HomeModule.favoriteRoutes => const Color(0xFFF39C12),
-    HomeModule.cyclingVideo => const Color(0xFF9B59B6),
-    HomeModule.cyclingAccounting => AppConfig.warmGold,
-    HomeModule.maintenanceReminder => AppConfig.warningOrange,
-    HomeModule.goldenHour => AppConfig.warningOrange,
-    HomeModule.cyclingAdvice => AppConfig.drivePrimary,
+    HomeModule.myTodo => AppConfig.primary,             // #2ECC71 绿
+    HomeModule.weatherAlert => AppConfig.accentBlue,     // #3498DB 蓝
+    HomeModule.nearbyPoi => AppConfig.accentOrange,     // #E67E22 橙
+    HomeModule.cyclingStats => const Color(0xFF27AE60), // #27AE60 深绿
+    HomeModule.myAchievements => const Color(0xFFF1C40F), // #F1C40F 金
+    HomeModule.tripPlan => const Color(0xFF1ABC9C),   // #1ABC9C 青
+    HomeModule.partnerActivity => const Color(0xFFE91E63), // #E91E63 粉
+    HomeModule.hotRoutes => const Color(0xFFFF6B35),   // #FF6B35 亮橙
+    HomeModule.favoriteRoutes => const Color(0xFFF39C12), // #F39C12 琥珀
+    HomeModule.cyclingVideo => const Color(0xFF9B59B6), // #9B59B6 紫
+    HomeModule.cyclingAccounting => AppConfig.warmGold,   // #F0C040 暖金
+    HomeModule.maintenanceReminder => const Color(0xFF607D8B), // #607D8B 蓝灰
+    HomeModule.goldenHour => const Color(0xFFFF9800), // #FF9800 琥珀
+    HomeModule.cyclingAdvice => const Color(0xFF00BCD4), // #00BCD4 青色
   };
 }
 
@@ -103,13 +106,6 @@ class _HotRoute {
   });
 }
 
-const _hotRoutes = [
-  _HotRoute(name: '西湖环湖经典', likes: 2341, walkers: 146, stars: 4.8, distanceKm: 12.5, climb: 80, durationMinutes: 50, difficulty: '新手'),
-  _HotRoute(name: '千岛湖绿道', likes: 1890, walkers: 118, stars: 4.9, distanceKm: 35.0, climb: 350, durationMinutes: 150, difficulty: '进阶'),
-  _HotRoute(name: '龙井北坡', likes: 1560, walkers: 92, stars: 4.6, distanceKm: 2.5, climb: 220, durationMinutes: 25, difficulty: '资深'),
-  _HotRoute(name: '赣北G318段', likes: 3200, walkers: 188, stars: 4.7, distanceKm: 180.0, climb: 3200, durationMinutes: 720, difficulty: '挑战'),
-];
-
 Color _diffColor(String d) {
   switch (d) {
     case '新手': return AppConfig.primary;
@@ -149,7 +145,7 @@ Widget? _modulePage(HomeModule m) {
     case HomeModule.myAchievements: return const MyAchievementsPage();
     case HomeModule.tripPlan: return const TripPlanPage();
     case HomeModule.partnerActivity: return const PartnerActivityPage();
-    case HomeModule.hotRoutes: return const HotRoutesPage();
+    case HomeModule.hotRoutes: return null;
     case HomeModule.favoriteRoutes: return const FavoriteRoutesPage();
     case HomeModule.cyclingVideo: return const CyclingVideoPage();
     case HomeModule.cyclingAccounting: return const CyclingAccountingPage();
@@ -173,11 +169,49 @@ class _HomePageState extends State<HomePage> {
   List<HomeModule> _modules = [..._defaultModules];
   bool _isEditing = false;
   bool _entry = false;
+  String? _pressedModule;
+  int? _pressedRoute;
+  double _todoProgress = 0.0;  // V7.7
+
+  // V7.7: 热门路线从 PresetRoutes 去重选取
+  List<_HotRoute> get _hotRoutes {
+    final official = PresetRoutes.all.where((r) => r.tags.contains('official')).take(4).toList();
+    // 如果不足 4 条，用非 official 补齐
+    final all = PresetRoutes.all;
+    final result = <_HotRoute>[];
+    for (var i = 0; i < official.length && result.length < 4; i++) {
+      result.add(_routeToHotRoute(official[i], i));
+    }
+    if (result.length < 4) {
+      for (var i = 0; i < all.length && result.length < 4; i++) {
+        if (!result.any((h) => h.name == all[i].name)) {
+          result.add(_routeToHotRoute(all[i], i));
+        }
+      }
+    }
+    return result;
+  }
+
+  _HotRoute _routeToHotRoute(RouteModel r, int index) {
+    final hash = r.id.hashCode.abs();
+    final labels = ['新手','进阶','资深','挑战'];
+    return _HotRoute(
+      name: r.name,
+      likes: 1500 + hash % 2000,
+      walkers: 80 + hash % 150,
+      stars: 4.5 + (hash % 10) / 20.0,  // 4.5-5.0
+      distanceKm: r.distanceKm,
+      climb: r.totalClimb,
+      durationMinutes: r.durationMinutes,
+      difficulty: labels[(r.difficulty - 1).clamp(0, 3)],
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    _loadTodoProgress();
   }
 
   Future<void> _loadPrefs() async {
@@ -195,6 +229,25 @@ class _HomePageState extends State<HomePage> {
       if (parsed.isNotEmpty) _modules = parsed;
     }
     setState(() => _entry = true);
+  }
+
+  Future<void> _loadTodoProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('v75_todos');
+    if (saved != null && mounted) {
+      try {
+        final decoded = json.decode(saved) as Map<String, dynamic>;
+        int total = 0, done = 0;
+        for (final phase in decoded.values) {
+          final list = phase as List<dynamic>;
+          for (final item in list) {
+            total++;
+            if (item['checked'] == true) done++;
+          }
+        }
+        if (total > 0) setState(() => _todoProgress = done / total);
+      } catch (_) {}
+    }
   }
 
   Future<void> _saveModules(List<HomeModule> m) async {
@@ -220,8 +273,9 @@ class _HomePageState extends State<HomePage> {
   // ===== Build =====
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConfig.bgMain,
+    return NetworkBanner(
+      child: Scaffold(
+        backgroundColor: AppConfig.bgMain,
       appBar: const PreferredSize(
         preferredSize: Size.fromHeight(AppConfig.topBarHeight),
         child: QuYeTopBar(),
@@ -249,6 +303,7 @@ class _HomePageState extends State<HomePage> {
               ),
             )
           : const Center(child: CircularProgressIndicator(color: AppConfig.primary)),
+      ),
     );
   }
 
@@ -295,9 +350,9 @@ class _HomePageState extends State<HomePage> {
         children: List.generate(_fixedEntries.length, (i) {
           final e = _fixedEntries[i];
           final List<Color> gradColors = [
-            [const Color(0x0D2ECC71), const Color(0x052ECC71)], // green
-            [const Color(0x0D3498DB), const Color(0x053498DB)], // blue
-            [const Color(0x0DE67E22), const Color(0x05E67E22)], // orange
+            [const Color(0x202ECC71), const Color(0x0D2ECC71)], // green
+            [const Color(0x203498DB), const Color(0x0D3498DB)], // blue
+            [const Color(0x20E67E22), const Color(0x0DE67E22)], // orange
           ][i];
           return Container(
             width: AppConfig.fixedCardW,
@@ -378,26 +433,50 @@ class _HomePageState extends State<HomePage> {
       spacing: 8,
       runSpacing: 12,
       children: _modules.map((m) => GestureDetector(
+        onTapDown: (_) => setState(() => _pressedModule = m.name),
+        onTapUp: (_) => setState(() => _pressedModule = null),
+        onTapCancel: () => setState(() => _pressedModule = null),
         onTap: () => _onModuleTap(m),
         onLongPress: () => setState(() => _isEditing = true),
-        child: SizedBox(
-          width: AppConfig.funcIconSize,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: AppConfig.funcIconSize,
-                height: AppConfig.funcIconSize,
-                decoration: BoxDecoration(
-                  color: m.bgColor.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(AppConfig.funcIconRadius),
+        child: AnimatedScale(
+          scale: _pressedModule == m.name ? AppConfig.pressScale : 1.0,
+          duration: const Duration(milliseconds: 150),
+          child: SizedBox(
+            width: AppConfig.funcIconSize,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: AppConfig.funcIconSize,
+                  height: AppConfig.funcIconSize,
+                  decoration: BoxDecoration(
+                    color: m.bgColor.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(AppConfig.funcIconRadius),
+                  ),
+                  child: m == HomeModule.myTodo && _todoProgress > 0
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: AppConfig.funcIconSize - 6,
+                            height: AppConfig.funcIconSize - 6,
+                            child: CircularProgressIndicator(
+                              value: _todoProgress,
+                              strokeWidth: 3,
+                              color: AppConfig.primary,
+                              backgroundColor: const Color(0xFFEDEDED),
+                            ),
+                          ),
+                          Text(m.emoji, style: const TextStyle(fontSize: AppConfig.funcInnerIconSize)),
+                        ],
+                      )
+                    : Center(child: Text(m.emoji, style: const TextStyle(fontSize: AppConfig.funcInnerIconSize))),
                 ),
-                child: Center(child: Text(m.emoji, style: const TextStyle(fontSize: AppConfig.funcInnerIconSize))),
-              ),
-              const SizedBox(height: 4),
-              Text(m.label, style: const TextStyle(fontSize: AppConfig.funcLabelSize, color: AppConfig.textPrimary),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
+                const SizedBox(height: 4),
+                Text(m.label, style: const TextStyle(fontSize: AppConfig.funcLabelSize, color: AppConfig.textPrimary),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ),
       )).toList(),
@@ -535,17 +614,23 @@ class _HomePageState extends State<HomePage> {
             scrollDirection: Axis.horizontal,
             itemCount: _hotRoutes.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => _buildHotRouteCard(_hotRoutes[i]),
+            itemBuilder: (_, i) => _buildHotRouteCard(_hotRoutes[i], i),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHotRouteCard(_HotRoute r) {
+  Widget _buildHotRouteCard(_HotRoute r, int index) {
     return GestureDetector(
+      onTapDown: (_) => setState(() => _pressedRoute = index),
+      onTapUp: (_) => setState(() => _pressedRoute = null),
+      onTapCancel: () => setState(() => _pressedRoute = null),
       onTap: () => _showRoutePreview(r),
-      child: AnimatedContainer(
+      child: AnimatedScale(
+        scale: _pressedRoute == index ? AppConfig.pressScale : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 240,
         height: 160,
@@ -566,6 +651,14 @@ class _HomePageState extends State<HomePage> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
+                ),
+              ),
+              // V7.7: 去野 Logo 水印
+              const Positioned(
+                top: 16, right: 12,
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Text('去野', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
               const Positioned(
@@ -621,7 +714,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _statChip(String text) {
@@ -739,7 +833,10 @@ class _RoutePreview extends StatelessWidget {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConfig.buttonRadius)),
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DeparturePage()));
+            },
               child: const Text('开始导航', style: TextStyle(fontSize: AppConfig.bodySize, fontWeight: AppConfig.w700)),
             ),
           ),

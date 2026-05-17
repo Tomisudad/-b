@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/scenario_config.dart';
 
 class ScenarioProvider extends ChangeNotifier {
-  OutdoorScenario _scenario = OutdoorScenario.drive;
+  OutdoorScenario _scenario = OutdoorScenario.cycle;
 
   OutdoorScenario get scenario => _scenario;
 

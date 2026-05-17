@@ -50,9 +50,6 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
 
   // ═══ V6.5 1.2 场景化数据面板 ═══
   double _calories = 0;
-  int _fuelRange = 180; // km, mock
-  double _nextGasKm = 35.0; // mock
-  double _nextServiceKm = 22.0; // mock
   double _gradePercent = 0; // mock grade %
   double _altitude = 450; // mock
   int _batteryLevel = 85; // mock %
@@ -386,7 +383,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               const SizedBox(height: 8),
               _markOption('💧', '发现补给', AppConfig.cyclePrimary, () { Navigator.pop(context); _addMark('💧', '发现补给'); }),
               const SizedBox(height: 8),
-              _markOption('📝', '快速笔记', AppConfig.drivePrimary, () { Navigator.pop(context); _addMark('📝', '快速笔记'); }),
+              _markOption('📝', '快速笔记', AppConfig.accentBlue, () { Navigator.pop(context); _addMark('📝', '快速笔记'); }),
             ]),
           ),
         ),
@@ -480,10 +477,10 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
                 const SizedBox(height: 16),
                 const Text('附近救援点', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
                 const SizedBox(height: 8),
-                const Text('🏥 医院', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.motoPrimary)),
+                const Text('🏥 医院', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.accentOrange)),
                 ..._hospitals.map((h) => _rescueRow(h)),
                 const SizedBox(height: 8),
-                const Text('👮 派出所', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.drivePrimary)),
+                const Text('👮 派出所', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.accentBlue)),
                 ..._policeStations.map((p) => _rescueRow(p)),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -523,11 +520,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
   // ▼ V6.5 1.7 离线应急知识库
   // ════════════════════════════════════════════════════════════
   void _showOfflineKnowledge() {
-    final items = switch (widget.scenario) {
-      OutdoorScenario.cycle => _cyclingKnowledge(),
-      OutdoorScenario.moto => _motoKnowledge(),
-      OutdoorScenario.drive => _drivingKnowledge(),
-    };
+    final items = _cyclingKnowledge();
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
@@ -555,6 +548,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
                 child: ListView.builder(
                   controller: scrollCtrl,
                   padding: const EdgeInsets.all(16),
+                  cacheExtent: 500,
                   itemCount: items.length,
                   itemBuilder: (_, i) => Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -584,20 +578,6 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
     ('🔗', '链条断裂应急', '使用魔术扣/快拆扣临时连接，或截链器截断后短接。注意：短接后避免大对大变速'),
     ('🔧', '刹车调整', '1.松开固定螺丝 2.调整刹车块位置 3.拉紧刹车线 4.测试→锁紧'),
     ('⚙️', '变速器失灵应急', '固定在最常用档位继续骑行，到达维修点后再处理'),
-  ];
-
-  List<(String, String, String)> _motoKnowledge() => const [
-    ('🏍️', '常见故障灯对照', '🟡发动机灯→检查油门/进气/氧传感器 | 🔴机油灯→立即停车检查机油位 | 🔴水温灯→停车散热'),
-    ('🔍', '无法启动排查', '1.检查电瓶→搭电 2.检查保险丝→更换 3.检查火花塞→清洁/更换 4.检查燃油→加油'),
-    ('💧', '漏油应急处理', '停车→确认泄漏类型→关闭油箱开关→用胶带/肥皂临时封堵→低速骑行至维修点'),
-    ('🔌', '火花塞更换', '1.拔高压包 2.用套筒拧下旧火花塞 3.手指旋入新火花塞→扳手加力1/4圈 4.插回高压包'),
-  ];
-
-  List<(String, String, String)> _drivingKnowledge() => const [
-    ('🚙', '换备胎（5步）', '1.拉手刹→挂P档 2.松螺丝→千斤顶升起 3.卸旧胎→装备胎 4.对角拧紧螺丝 5.降下→复紧'),
-    ('🔋', '电瓶搭电', '1.正极(红)接正→正接正 2.负极(黑)接救援车负极 3.另一端接被救车接地(远离电瓶) 4.启动救援车→启动被救车'),
-    ('🌡️', '发动机过热', '1.靠边停车 2.怠速运转(不要熄火) 3.开暖风(最大)辅助散热 4.水温降后检查冷却液'),
-    ('💧', '水箱漏水应急', '临时堵漏：鸡蛋清/碎肥皂塞入漏点→低速开至维修点。严重漏→叫拖车'),
   ];
 
   // ════════════════════════════════════════════════════════════
@@ -702,11 +682,11 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               const SizedBox(height: 16),
               _rerouteOption('📍', '添加途经点', '插入到当前导航序列，重新规划路线', AppConfig.cyclePrimary, () { Navigator.pop(context); _addWaypoint(); }),
               const SizedBox(height: 8),
-              _rerouteOption('🚩', '直接导航去这里', '变更终点，丢弃剩余途经点，原路线保留', AppConfig.motoPrimary, () { Navigator.pop(context); _changeDestination(); }),
+              _rerouteOption('🚩', '直接导航去这里', '变更终点，丢弃剩余途经点，原路线保留', AppConfig.accentOrange, () { Navigator.pop(context); _changeDestination(); }),
               const SizedBox(height: 8),
-              _rerouteOption('📝', '标记此处', '仅标记，不改路线', AppConfig.drivePrimary, () { Navigator.pop(context); _addMark('📍', '地图标记'); }),
+              _rerouteOption('📝', '标记此处', '仅标记，不改路线', AppConfig.accentBlue, () { Navigator.pop(context); _addMark('📍', '地图标记'); }),
               const SizedBox(height: 8),
-              _rerouteOption('🔍', '顺路搜索', '搜索沿途补给点、加油站等', AppConfig.drivePrimary, () { Navigator.pop(context); setState(() => _showAlongSearch = true); }),
+              _rerouteOption('🔍', '顺路搜索', '搜索沿途补给点、加油站等', AppConfig.accentBlue, () { Navigator.pop(context); setState(() => _showAlongSearch = true); }),
             ]),
           ),
         ),
@@ -735,11 +715,11 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               const SizedBox(height: 16),
               _rerouteOption('✏️', '编辑备注', '修改途经点名称', AppConfig.textPrimary, () => Navigator.pop(context)),
               const SizedBox(height: 8),
-              _rerouteOption('🔇', '跳过此点', '本次导航绕开，可恢复', AppConfig.motoPrimary, () { Navigator.pop(context); _skipWaypoint(index); }),
+              _rerouteOption('🔇', '跳过此点', '本次导航绕开，可恢复', AppConfig.accentOrange, () { Navigator.pop(context); _skipWaypoint(index); }),
               const SizedBox(height: 8),
               _rerouteOption('❌', '删除此点', '从本次导航移除', AppConfig.sosRed, () { Navigator.pop(context); _deleteWaypoint(index); }),
               const SizedBox(height: 8),
-              _rerouteOption('📍', '设为终点', '提前结束，后续途经点移除', AppConfig.drivePrimary, () { Navigator.pop(context); _setAsDestination(index); }),
+              _rerouteOption('📍', '设为终点', '提前结束，后续途经点移除', AppConfig.accentBlue, () { Navigator.pop(context); _setAsDestination(index); }),
             ]),
           ),
         ),
@@ -774,7 +754,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
           TextButton(onPressed: () { Navigator.pop(ctx); _applyReroute('变更终点', _originalDistanceKm - 5 - Random().nextDouble() * 10); },
-            child: const Text('确认更改', style: TextStyle(color: AppConfig.motoPrimary, fontWeight: FontWeight.w600))),
+            child: const Text('确认更改', style: TextStyle(color: AppConfig.accentOrange, fontWeight: FontWeight.w600))),
         ],
       ));
     } else { _applyReroute('变更终点', _originalDistanceKm - 5 - Random().nextDouble() * 10); }
@@ -843,7 +823,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               if (_rerouteMessage != null)
                 Positioned(top: _showWeatherAlert ? 60 : (_powerSaving ? 28 : 8), left: 16, right: 16, child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow), child: Row(children: [Expanded(child: Text(_rerouteMessage!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)))]))),
               if (_rerouted)
-                Positioned(top: _rerouteMessage != null ? 80 : (_showWeatherAlert ? 60 : 8), right: 16, child: GestureDetector(onTap: _restoreOriginalRoute, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(20), boxShadow: AppConfig.cardShadow), child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.restore, size: 16, color: AppConfig.drivePrimary), SizedBox(width: 4), Text('恢复原路线', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppConfig.drivePrimary))])))),
+                Positioned(top: _rerouteMessage != null ? 80 : (_showWeatherAlert ? 60 : 8), right: 16, child: GestureDetector(onTap: _restoreOriginalRoute, child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(20), boxShadow: AppConfig.cardShadow), child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.restore, size: 16, color: AppConfig.accentBlue), SizedBox(width: 4), Text('恢复原路线', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppConfig.accentBlue))])))),
               // ═══ V6.5 1.1 速度面板（左上方） ═══
               Positioned(top: _rerouteMessage != null ? 80 : (_showWeatherAlert ? 60 : (_powerSaving ? 28 : 16)), left: 16, child: _buildSpeedPanel(sceneColor, speed, dist)),
               // ═══ V6.5 1.3 语音按钮（右侧悬浮） ═══
@@ -852,7 +832,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               if (_showBuddyCard)
                 Positioned(bottom: _showElevationPanorama ? 380 : 150, left: 16, right: 16, child: AnimatedContainer(duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppConfig.motoPrimary.withOpacity(0.3))),
+                  decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppConfig.accentOrange.withOpacity(0.3))),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       const Text('👥', style: TextStyle(fontSize: 18)),
@@ -893,7 +873,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
                           Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppConfig.textPrimary)),
                           Text(r.extra, style: const TextStyle(fontSize: 11, color: AppConfig.textSecondary)),
                         ])),
-                        Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: r.isOnRoute ? AppConfig.cyclePrimary.withOpacity(0.1) : AppConfig.motoPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(r.detail, style: TextStyle(fontSize: 10, color: r.isOnRoute ? AppConfig.cyclePrimary : AppConfig.motoPrimary))),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: r.isOnRoute ? AppConfig.cyclePrimary.withOpacity(0.1) : AppConfig.accentOrange.withOpacity(0.1), borderRadius: BorderRadius.circular(4)), child: Text(r.detail, style: TextStyle(fontSize: 10, color: r.isOnRoute ? AppConfig.cyclePrimary : AppConfig.accentOrange))),
                       ]),
                     ),
                   )),
@@ -933,7 +913,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
           // 原路线虚线
           if (_rerouted) CustomPaint(size: Size.infinite, painter: _RouteLinePainter(AppConfig.textSecondary.withOpacity(0.3), true)),
           // 当前路线实线
-          CustomPaint(size: Size.infinite, painter: _RouteLinePainter(_rerouted ? AppConfig.drivePrimary : sceneColor, false)),
+          CustomPaint(size: Size.infinite, painter: _RouteLinePainter(_rerouted ? AppConfig.accentBlue : sceneColor, false)),
           // 途经点（支持跳过标记）
           ...List.generate(4, (i) {
             final left = 20.0 + i * 80.0 + 20;
@@ -984,22 +964,6 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
           _dataChip('坡度', '${_gradePercent.toStringAsFixed(1)}%', sceneColor),
           const SizedBox(height: 4),
           _dataChip('消耗', '${_calories.toInt()} kcal', AppConfig.goldEnd),
-        ]);
-      case OutdoorScenario.moto:
-        items.addAll([
-          _dataChip('油量续航', '${_fuelRange}km', AppConfig.motoPrimary),
-          const SizedBox(height: 4),
-          _dataChip('下个加油站', '${_nextGasKm.toStringAsFixed(1)}km', AppConfig.motoPrimary),
-          const SizedBox(height: 4),
-          _dataChip('海拔', '${_altitude.toInt()}m', AppConfig.drivePrimary),
-        ]);
-      case OutdoorScenario.drive:
-        items.addAll([
-          _dataChip('剩余距离', '${_originalDistanceKm.toStringAsFixed(1)}km', AppConfig.drivePrimary),
-          const SizedBox(height: 4),
-          _dataChip('下个服务区', '${_nextServiceKm.toStringAsFixed(1)}km', AppConfig.drivePrimary),
-          const SizedBox(height: 4),
-          _dataChip('海拔', '${_altitude.toInt()}m', AppConfig.drivePrimary),
         ]);
     }
     return items;
@@ -1076,7 +1040,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
               _driveCircleBtn(Icons.share_outlined, '分享', _toggleLocationShare, _sharingLocation ? AppConfig.cyclePrimary : AppConfig.textSecondary),
               _driveCircleBtn(_paused ? Icons.play_arrow : Icons.pause, _paused ? '继续' : '暂停', _togglePause, sceneColor),
               _driveCircleBtn(Icons.warning_amber_rounded, 'SOS', _showSOS, AppConfig.sosRed),
-              _driveCircleBtn(Icons.stop_circle, '结束', _endNavigation, AppConfig.motoPrimary, primary: true),
+              _driveCircleBtn(Icons.stop_circle, '结束', _endNavigation, AppConfig.accentOrange, primary: true),
             ]),
             // 长按提示
             Center(child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), margin: const EdgeInsets.only(top: 2), decoration: BoxDecoration(color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(8)), child: Text('上拉查看海拔 · 长按地图改道', style: const TextStyle(fontSize: 9, color: Colors.white30)))),
@@ -1096,7 +1060,7 @@ class _NavigationPageState extends State<NavigationPage> with TickerProviderStat
   Widget _buddyQuickMsg(String msg) {
     return GestureDetector(
       onTap: () => _sendBuddyPhrase(msg),
-      child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: AppConfig.motoPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Text(msg, style: const TextStyle(fontSize: 12, color: AppConfig.motoPrimary))),
+      child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: AppConfig.accentOrange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Text(msg, style: const TextStyle(fontSize: 12, color: AppConfig.accentOrange))),
     );
   }
 

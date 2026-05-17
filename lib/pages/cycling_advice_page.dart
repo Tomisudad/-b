@@ -36,6 +36,7 @@ class CyclingAdvicePage extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppConfig.pageMargin),
+        cacheExtent: 500,
         itemCount: _tips.length,
         itemBuilder: (_, i) => _buildCard(_tips[i]),
       ),

@@ -7,7 +7,6 @@ import 'providers/auth_provider.dart';
 import 'providers/checklist_provider.dart';
 import 'providers/trip_provider.dart';
 import 'services/location_service.dart';
-import 'services/no_moto_service.dart';
 import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 import 'app.dart';
@@ -89,8 +88,7 @@ class _SplashGateState extends State<SplashGate> with SingleTickerProviderStateM
   Future<void> _bootstrap() async {
     _animCtrl.forward();
 
-    // 后台加载禁摩数据 + 检查隐私授权
-    await NoMotoService.instance.load();
+    // 后台加载数据
     final ok = await hasUserConsented();
 
     // 动画至少播满 ~1.2s

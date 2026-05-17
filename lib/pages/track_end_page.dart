@@ -122,7 +122,7 @@ class _TrackEndPageState extends State<TrackEndPage> with TickerProviderStateMix
                   decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     const Row(children: [
-                      Icon(Icons.alt_route_outlined, size: 18, color: AppConfig.motoPrimary),
+                      Icon(Icons.alt_route_outlined, size: 18, color: AppConfig.accentOrange),
                       SizedBox(width: 6),
                       Text('路线调整记录', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppConfig.textPrimary)),
                     ]),
@@ -130,7 +130,7 @@ class _TrackEndPageState extends State<TrackEndPage> with TickerProviderStateMix
                     ...widget.rerouteLog!.map((a) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Row(children: [
-                        Container(width: 6, height: 6, decoration: BoxDecoration(color: AppConfig.motoPrimary, shape: BoxShape.circle)),
+                        Container(width: 6, height: 6, decoration: BoxDecoration(color: AppConfig.accentOrange, shape: BoxShape.circle)),
                         const SizedBox(width: 10),
                         Expanded(child: Text(a.action, style: const TextStyle(fontSize: 13, color: AppConfig.textPrimary))),
                         Text('${a.newDistanceKm.toStringAsFixed(1)}km', style: const TextStyle(fontSize: 12, color: AppConfig.textSecondary)),
@@ -264,7 +264,7 @@ class _TrackEndPageState extends State<TrackEndPage> with TickerProviderStateMix
     ClipRRect(borderRadius: BorderRadius.circular(2), child: LinearProgressIndicator(value: a.progress, backgroundColor: const Color(0xFFEDEDED), valueColor: AlwaysStoppedAnimation<Color>(_tierColor(a.tier)), minHeight: 4)),
   ]));
 
-  Color _tierColor(_MedalTier tier) => switch (tier) { _MedalTier.bronze => const Color(0xFFCD7F32), _MedalTier.silver => const Color(0xFFA8A8A8), _MedalTier.gold => AppConfig.goldEnd, _MedalTier.diamond => AppConfig.drivePrimary };
+  Color _tierColor(_MedalTier tier) => switch (tier) { _MedalTier.bronze => const Color(0xFFCD7F32), _MedalTier.silver => const Color(0xFFA8A8A8), _MedalTier.gold => AppConfig.goldEnd, _MedalTier.diamond => AppConfig.accentBlue };
   String _tierLabel(_MedalTier tier) => switch (tier) { _MedalTier.bronze => '🥉 铜', _MedalTier.silver => '🥈 银', _MedalTier.gold => '🥇 金', _MedalTier.diamond => '💎 钻' };
 }
 

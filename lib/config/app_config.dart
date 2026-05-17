@@ -27,10 +27,10 @@ class AppConfig {
   static const Color warningOrange = Color(0xFFE67E22);
   static const Color sosRed = Color(0xFFE74C3C);
 
-  // ===== 场景主色别名 =====
+  // ===== 场景色 =====
   static const Color cyclePrimary = Color(0xFF2ECC71);
-  static const Color motoPrimary = Color(0xFFE67E22);
-  static const Color drivePrimary = Color(0xFF3498DB);
+  static const Color accentOrange = Color(0xFFE67E22);
+  static const Color accentBlue   = Color(0xFF3498DB);
 
   // ===== 渐变 =====
   static const Color goldStart = Color(0xFFF0C040);
@@ -113,8 +113,8 @@ class AppConfig {
   static const double moduleCircleSize = 56.0; // 固定入口圆形底 (兼容旧代码)
   static const double fixedEntrySize = 56.0;    // 固定入口圆形底直径
   static const double fixedIconSize = 40.0;     // 固定入口图标
-  static const double funcIconSize = 64.0;      // 可选模块方块
-  static const double funcInnerIconSize = 32.0; // 可选模块内图标
+  static const double funcIconSize = 64.0;      // V7.7 64x64 浅色圆角方块
+  static const double funcInnerIconSize = 28.0;
   static const double funcLabelSize = 12.0;
 
   // ===== 卡片尺寸 =====

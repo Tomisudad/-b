@@ -108,6 +108,7 @@ class _CyclingAccountingPageState extends State<CyclingAccountingPage>
         style: TextStyle(fontSize: 13, color: AppConfig.textSecondary)));
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: AppConfig.pageMargin),
+      cacheExtent: 500,
       itemCount: items.length,
       itemBuilder: (_, i) => _buildItem(items[i]),
     );

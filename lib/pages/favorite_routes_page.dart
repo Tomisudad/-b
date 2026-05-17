@@ -25,6 +25,7 @@ class FavoriteRoutesPage extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppConfig.pageMargin),
+        cacheExtent: 500,
         itemCount: _routes.length,
         itemBuilder: (_, i) => _buildCard(_routes[i]),
       ),

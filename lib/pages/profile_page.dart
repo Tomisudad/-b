@@ -67,9 +67,9 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: AppConfig.cardBg, borderRadius: BorderRadius.circular(AppConfig.cardRadius), boxShadow: AppConfig.cardShadow),
       child: Row(children: [
         _stat(Icons.route_outlined, '42', '路线', AppConfig.cyclePrimary),
-        _stat(Icons.timeline_outlined, '156', '轨迹', AppConfig.motoPrimary),
+        _stat(Icons.timeline_outlined, '156', '轨迹', AppConfig.accentOrange),
         _stat(Icons.emoji_events_outlined, '8', '勋章', AppConfig.goldStart),
-        _stat(Icons.explore_outlined, '23', '点亮区县', AppConfig.drivePrimary),
+        _stat(Icons.explore_outlined, '23', '点亮区县', AppConfig.accentBlue),
       ]),
     ));
   }

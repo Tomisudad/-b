@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'config/app_config.dart';
+import 'widgets/custom_nav_icon.dart';
 import 'pages/home_page.dart';
 import 'pages/partner_page.dart';
 import 'pages/community_page.dart';
@@ -34,20 +35,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
     AppConfig.goldStart,
     AppConfig.cyclePrimary,
     AppConfig.warmGold,
-  ];
-  static const _icons = [
-    Icons.door_front_door_outlined,
-    Icons.people_outline_rounded,
-    Icons.add,
-    Icons.chat_bubble_outline_rounded,
-    Icons.person_outline_rounded,
-  ];
-  static const _activeIcons = [
-    Icons.door_front_door,
-    Icons.people_rounded,
-    Icons.add,
-    Icons.chat_bubble_rounded,
-    Icons.person_rounded,
   ];
 
   @override
@@ -191,7 +178,6 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
   Widget _buildNavItem(int index) {
     final isSelected = _currentIndex == index;
     final color = isSelected ? _tabColors[index] : AppConfig.textSecondary;
-    final icon = isSelected ? _activeIcons[index] : _icons[index];
     return Expanded(
       child: GestureDetector(
         onTap: () => _onTap(index),
@@ -209,15 +195,15 @@ class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
                 children: [
                   isSelected
                       ? Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             boxShadow: [
                               BoxShadow(color: color.withOpacity(0.20), blurRadius: 8, spreadRadius: 0),
                             ],
                           ),
-                          child: Icon(icon, size: AppConfig.navIconSize, color: color),
+                          child: CustomNavIcon(index: index, isSelected: isSelected, size: AppConfig.navIconSize),
                         )
-                      : Icon(icon, size: AppConfig.navIconSize, color: color),
+                      : CustomNavIcon(index: index, isSelected: isSelected, size: AppConfig.navIconSize),
                   const SizedBox(height: 2),
                   Text(
                     _labels[index],

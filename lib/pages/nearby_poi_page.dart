@@ -114,6 +114,7 @@ class _NearbyPoiPageState extends State<NearbyPoiPage> with SingleTickerProvider
               ? const Center(child: Text('附近暂无此类点位', style: TextStyle(fontSize: 14, color: AppConfig.textSecondary)))
               : ListView.builder(
                   padding: const EdgeInsets.all(AppConfig.pageMargin),
+                  cacheExtent: 500,
                   itemCount: filtered.length,
                   itemBuilder: (_, i) => _buildPoiItem(filtered[i], i, cat.color),
                 ),

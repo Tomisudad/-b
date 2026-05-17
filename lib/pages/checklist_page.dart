@@ -27,7 +27,7 @@ extension _EquipStatusX on _EquipStatus {
     switch (this) {
       case _EquipStatus.unchecked: return AppConfig.textSecondary;
       case _EquipStatus.good: return AppConfig.cyclePrimary;
-      case _EquipStatus.needReplace: return AppConfig.motoPrimary;
+      case _EquipStatus.needReplace: return AppConfig.accentOrange;
       case _EquipStatus.notCarry: return AppConfig.sosRed;
     }
   }
@@ -81,39 +81,7 @@ class _ChecklistPageState extends State<ChecklistPage> {
         _EquipItem(name: '急救包', isDurable: true),
       ],
     ),
-    _Checklist(
-      name: '摩旅出行装备',
-      scene: OutdoorScenario.moto,
-      items: [
-        _EquipItem(name: '全盔', isDurable: true),
-        _EquipItem(name: '骑行服', isDurable: true),
-        _EquipItem(name: '护膝护肘', isDurable: true),
-        _EquipItem(name: '骑行靴', isDurable: true),
-        _EquipItem(name: '补胎工具包', isDurable: true),
-        _EquipItem(name: '链条油', isDurable: false, usedCount: 3),
-        _EquipItem(name: '备用油', isDurable: true),
-        _EquipItem(name: 'GPS定位器', isDurable: true),
-        _EquipItem(name: '运动相机', isDurable: true),
-        _EquipItem(name: '雨衣', isDurable: true),
-      ],
-    ),
-    _Checklist(
-      name: '自驾露营装备',
-      scene: OutdoorScenario.drive,
-      items: [
-        _EquipItem(name: '备胎', isDurable: true),
-        _EquipItem(name: '千斤顶', isDurable: true),
-        _EquipItem(name: '三角警示牌', isDurable: true),
-        _EquipItem(name: '灭火器', isDurable: true),
-        _EquipItem(name: '帐篷', isDurable: true),
-        _EquipItem(name: '睡袋', isDurable: true),
-        _EquipItem(name: '防潮垫', isDurable: true),
-        _EquipItem(name: '露营灯', isDurable: true),
-        _EquipItem(name: '折叠桌椅', isDurable: true),
-        _EquipItem(name: '饮用水(4L)', isDurable: false, usedCount: 2),
-        _EquipItem(name: '压缩饼干', isDurable: false, usedCount: 5),
-      ],
-    ),
+
   ];
 
   @override
@@ -195,7 +163,7 @@ class _ChecklistPageState extends State<ChecklistPage> {
                   _summaryChip('$unchecked 未检查', AppConfig.textSecondary),
                 if (needReplace > 0) ...[
                   const SizedBox(width: 8),
-                  _summaryChip('$needReplace 需更换', AppConfig.motoPrimary),
+                  _summaryChip('$needReplace 需更换', AppConfig.accentOrange),
                 ],
               ],
             ),
@@ -211,7 +179,7 @@ class _ChecklistPageState extends State<ChecklistPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: it.status == _EquipStatus.needReplace
-                        ? AppConfig.motoPrimary.withOpacity(0.08)
+                        ? AppConfig.accentOrange.withOpacity(0.08)
                         : AppConfig.bgMain,
                     borderRadius: BorderRadius.circular(4),
                   ),
@@ -220,7 +188,7 @@ class _ChecklistPageState extends State<ChecklistPage> {
                     children: [
                       Icon(it.status.icon, size: 12, color: it.status.color(color)),
                       const SizedBox(width: 3),
-                      Text(it.name, style: TextStyle(fontSize: 11, color: it.status == _EquipStatus.needReplace ? AppConfig.motoPrimary : AppConfig.textSecondary)),
+                      Text(it.name, style: TextStyle(fontSize: 11, color: it.status == _EquipStatus.needReplace ? AppConfig.accentOrange : AppConfig.textSecondary)),
                     ],
                   ),
                 )).toList(),

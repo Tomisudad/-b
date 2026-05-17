@@ -1,43 +1,13 @@
 import 'package:flutter/painting.dart';
 import 'app_config.dart';
 
-/// 场景枚举 V7.3 - 骑行深度定制版
-enum OutdoorScenario { cycle, moto, drive }
+/// 场景枚举 V7.6 - 骑行唯一
+enum OutdoorScenario { cycle }
 
 extension OutdoorScenarioX on OutdoorScenario {
-  String get label {
-    switch (this) {
-      case OutdoorScenario.cycle:
-        return '骑行';
-      case OutdoorScenario.moto:
-        return '摩旅';
-      case OutdoorScenario.drive:
-        return '自驾';
-    }
-  }
-
-  String get emoji {
-    switch (this) {
-      case OutdoorScenario.cycle:
-        return '🚴';
-      case OutdoorScenario.moto:
-        return '🏍️';
-      case OutdoorScenario.drive:
-        return '🚙';
-    }
-  }
-
-  Color get primaryColor {
-    switch (this) {
-      case OutdoorScenario.cycle:
-        return AppConfig.primary;
-      case OutdoorScenario.moto:
-        return AppConfig.warningOrange;
-      case OutdoorScenario.drive:
-        return const Color(0xFF3498DB);
-    }
-  }
-
+  String get label => '骑行';
+  String get emoji => '🚴';
+  Color get primaryColor => AppConfig.primary;
   Color get color => primaryColor;
 }
 
@@ -48,9 +18,9 @@ extension RouteDifficultyX on RouteDifficulty {
   String get label {
     switch (this) {
       case RouteDifficulty.easy:
-        return '休闲';
+        return '新手';
       case RouteDifficulty.medium:
-        return '中等';
+        return '进阶';
       case RouteDifficulty.hard:
         return '挑战';
       case RouteDifficulty.extreme:
@@ -139,9 +109,7 @@ class ScenarioConfig {
 
   static const List<ScenarioConfig> all = [cycle];
 
-  static ScenarioConfig of(OutdoorScenario s) {
-    return cycle; // V7.3 只用骑行
-  }
+  static ScenarioConfig of(OutdoorScenario s) => cycle;
 
   List<String> get flatEquipmentItems {
     final items = <String>[];
