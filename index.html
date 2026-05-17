@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <base href="/-b/">
+  <meta name="description" content="一款为自驾游、摩旅、骑行深度发烧友打造的户外出行应用。记录轨迹、寻找搭子、分享旅程。去野，去探索。">
+  <meta name="theme-color" content="#FFFFFF">
+  <title>去野 | 读万卷书，行万里路</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- PWA: 预缓存 Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      });
+    }
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background-color: #F5F7FA;
+      font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ===== 全屏加载动画 ===== */
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #F5F7FA 0%, #FFFFFF 100%);
+      z-index: 9999;
+      transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    }
+    #loading.hidden {
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+
+    #loading .container {
+      text-align: center;
+    }
+
+    /* Logo 呼吸动画 */
+    #loading .logo {
+      width: 72px; height: 72px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 50%, #81C784 100%);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 32px rgba(46, 125, 50, 0.25);
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+
+    #loading .logo-icon {
+      font-size: 32px;
+      color: white;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* 品牌名渐入 */
+    #loading .brand {
+      font-size: 28px; font-weight: 800;
+      background: linear-gradient(135deg, #2E7D32 0%, #81C784 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    #loading .slogan {
+      font-size: 15px; color: #888888; font-weight: 400;
+      letter-spacing: 2px;
+      animation: fadeInUp 0.6s ease-out 0.15s both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 加载指示器 */
+    #loading .dots {
+      display: flex; gap: 6px; justify-content: center;
+      margin-top: 24px;
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+    #loading .dot {
+      width: 6px; height: 6px;
+      background: #B2B2B2; border-radius: 3px;
+      animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    #loading .dot:nth-child(2) { animation-delay: 0.2s; }
+    #loading .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+
+  <script>
+    window.addEventListener('load', function() {
+      var tag = document.createElement('script');
+      tag.src = 'main.dart.js';
+      document.body.appendChild(tag);
+
+      // 监听 Flutter 启动完成
+      var checkReady = setInterval(function() {
+        var flutterView = document.querySelector('flutter-view');
+        if (flutterView) {
+          clearInterval(checkReady);
+          setTimeout(function() {
+            var l = document.getElementById('loading');
+            if (l) l.classList.add('hidden');
+          }, 400);
+        }
+      }, 200);
+    });
+  </script>
+</head>
+<body>
+  <div id="loading">
+    <div class="container">
+      <div class="logo">
+        <span class="logo-icon">⛰️</span>
+      </div>
+      <div class="brand">去野</div>
+      <div class="slogan">去 野 ， 去 探 索</div>
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
