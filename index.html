@@ -1,526 +1,956 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>去野 · 骑行决策与记录工具</title>
-<style>
-/* ===== 全局设计令牌 ===== */
-:root{
---green:#2ECC71;--green-d:#1A8A3A;--green-l:rgba(46,204,113,.06);--green-ll:rgba(46,204,113,.14);
---gold:#F0C040;--gold-l:rgba(240,192,64,.1);--orange:#E67E22;--red:#E74C3C;
---blue:#3498DB;--purple:#9B59B6;--yellow:#FFCC00;
---text:#1A1A2E;--text2:#4A4A5E;--text3:#6A6A6F;--text4:#8A8A8E;
---bg:#F5F7FA;--card:#FFFFFF;--divider:rgba(237,237,237,.5);
---radius-sm:8px;--radius:14px;--radius-lg:20px;--radius-xl:28px;
---s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;--s10:40px;--s12:48px;--s16:64px;
---fs-xxs:11px;--fs-xs:12px;--fs-sm:14px;--fs-md:16px;--fs-lg:18px;--fs-xl:22px;--fs-2xl:28px;
---shadow-sm:0 2px 8px rgba(0,0,0,.04);--shadow-md:0 4px 12px rgba(0,0,0,.06);
---ease:cubic-bezier(.25,.1,.25,1);--ease-s:cubic-bezier(.34,1.56,.64,1);--ease-o:cubic-bezier(.16,1,.3,1);
---touch:44px;
-}
-/* ===== 动画 ===== */
-@keyframes brandGlow{0%,100%{background-position:0% 50%;filter:drop-shadow(0 0 0 rgba(46,204,113,0))}50%{background-position:100% 50%;filter:drop-shadow(0 0 12px rgba(46,204,113,.6))}}
-@keyframes pulseRing{0%{transform:scale(1);opacity:.3}50%{transform:scale(1.12);opacity:0}100%{transform:scale(1);opacity:.3}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes confetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(-200px) rotate(720deg);opacity:0}}
-@keyframes scanLine{0%,100%{transform:translateY(0)}50%{transform:translateY(278px)}}
-@keyframes sloganSlide{0%,25%{transform:translateX(0)}30%,55%{transform:translateX(-100%)}60%,85%{transform:translateX(-200%)}90%,100%{transform:translateX(0)}}
-@keyframes editWiggle{from{transform:rotate(-1deg)}to{transform:rotate(1deg)}}
-@keyframes highlightPulse{0%,100%{background:var(--green-l)}50%{background:rgba(46,204,113,.2)}}
-/* ===== 基础重置 ===== */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{height:100%;overflow:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);height:100%;-webkit-font-smoothing:antialiased;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;}
-.app{max-width:430px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative;background:var(--bg);}
-/* ===== 顶栏 ===== */
-.header{padding:var(--s4) var(--s5);padding-top:max(var(--s4),env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;z-index:50;flex-shrink:0;border-bottom:.5px solid var(--divider);background:rgba(255,255,255,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
-.header-back{width:var(--touch);height:var(--touch);display:flex;align-items:center;justify-content:center;border:none;background:none;font-size:20px;cursor:pointer;border-radius:50%;color:var(--text);}
-.header-back:active{background:var(--bg)}
-.brand-logo{font-size:24px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(90deg,#2ECC71,#1A8A3A,#2ECC71);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:brandGlow 3s ease-in-out infinite;}
-.header-title{font-size:var(--fs-md);font-weight:700;letter-spacing:-.2px}
-.weather-capsule{padding:4px 12px;border-radius:100px;background:var(--green-l);font-size:var(--fs-xs);font-weight:600;color:var(--green-d);cursor:pointer;min-height:var(--touch);display:flex;align-items:center;}
-.slogan{font-size:var(--fs-xs);color:var(--text3);width:100px;overflow:hidden;}
-.slogan-track{display:flex;width:300%;animation:sloganSlide 12s ease-in-out infinite;}
-.slogan-item{flex:0 0 100px;text-align:center;}
-/* ===== 页面主体 ===== */
-.page-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;}
-.page-body::-webkit-scrollbar{width:0}
-.page-content{padding:0 var(--s5) var(--s8)}
-/* ===== 底部导航 ===== */
-.bottom-nav{display:flex;align-items:flex-end;justify-content:space-around;padding:var(--s1) var(--s2);padding-bottom:max(var(--s3),env(safe-area-inset-bottom));background:rgba(255,255,255,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:.5px solid var(--divider);flex-shrink:0;z-index:50}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:var(--s1) var(--s3);cursor:pointer;border:none;background:none;font-family:inherit;min-width:48px;min-height:48px;justify-content:center;transition:transform .15s var(--ease);position:relative}
-.nav-item:focus-visible{outline:2px solid var(--green);outline-offset:-2px;border-radius:var(--radius-sm)}
-.nav-icon{font-size:22px;transition:transform .2s var(--ease-s),color .2s var(--ease);line-height:1;color:var(--text3)}
-.nav-label{font-size:var(--fs-xs);font-weight:500;color:var(--text3);transition:color .2s var(--ease)}
-.nav-item.active .nav-label{color:var(--green);font-weight:700}
-.nav-item.active .nav-icon{color:var(--green);transform:scale(1.12);filter:drop-shadow(0 0 4px rgba(46,204,113,.3))}
-.nav-center{position:relative;top:-16px;margin:0 var(--s2);display:flex;align-items:center;justify-content:center;}
-.nav-center-btn{width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,#F0C040 0%,#E67E22 100%);color:#fff;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(240,192,64,.4);transition:transform .15s var(--ease-s);font-family:inherit}
-.nav-center-btn:active{transform:scale(.92)}
-.nav-center-pulse{position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--gold);animation:pulseRing 2s var(--ease-o) infinite;pointer-events:none}
-/* ===== 卡片 ===== */
-.card{background:var(--card);border-radius:var(--radius-lg);padding:var(--s5);margin-bottom:var(--s4);box-shadow:var(--shadow-md);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}
-.card:active{transform:scale(.97);box-shadow:var(--shadow-sm)}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)}
-.card-title{font-size:var(--fs-md);font-weight:700;letter-spacing:-.2px}
-.card-more{font-size:var(--fs-xs);color:var(--green);font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;min-height:var(--touch);padding:0 var(--s2)}
-/* ===== 核心入口 ===== */
-.core-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4);margin-bottom:var(--s5)}
-.core-item{display:flex;flex-direction:column;align-items:center;gap:var(--s2);padding:var(--s4) 0;cursor:pointer;min-height:96px;justify-content:center;transition:transform .15s var(--ease)}
-.core-item:active{transform:scale(.95)}
-.core-icon{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(46,204,113,.1),rgba(46,204,113,.05));display:flex;align-items:center;justify-content:center;font-size:28px}
-.core-label{font-size:var(--fs-xs);font-weight:600;color:var(--text2)}
-/* ===== 可编辑网格 ===== */
-.edit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);margin-bottom:var(--s5)}
-.edit-item{aspect-ratio:1;background:var(--card);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s2);cursor:pointer;transition:transform .15s var(--ease),box-shadow .15s var(--ease);box-shadow:var(--shadow-sm);position:relative}
-.edit-item:active{transform:scale(.95);background:var(--bg)}
-.edit-item.edit-mode{animation:editWiggle .3s ease-in-out infinite alternate}
-.edit-icon{font-size:24px;height:32px;display:flex;align-items:center;justify-content:center}
-.edit-label{font-size:var(--fs-xxs);font-weight:500;color:var(--text2);text-align:center;line-height:1.2}
-.edit-remove{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:12px;display:none;align-items:center;justify-content:center;cursor:pointer;border:none}
-.edit-item.edit-mode .edit-remove{display:flex}
-/* ===== 路线卡片 ===== */
-.route-card{position:relative;border-radius:var(--radius);overflow:hidden;margin-bottom:var(--s2);cursor:pointer;transition:transform .15s var(--ease);height:120px}
-.route-card:active{transform:scale(.98)}
-.route-img{width:100%;height:100%;display:block;background-size:cover;background-position:center;}
-.route-overlay{position:absolute;bottom:0;left:0;right:0;padding:var(--s3);background:linear-gradient(transparent,rgba(0,0,0,.7) 60%);color:#fff}
-.route-name{font-size:var(--fs-sm);font-weight:700;margin-bottom:2px}
-.route-meta{font-size:var(--fs-xxs);opacity:.8;display:flex;gap:var(--s2)}
-.route-tag{position:absolute;top:var(--s2);right:var(--s2);font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(4px);}
-/* ===== 标签 ===== */
-.tag{font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:100px;display:inline-block}
-.tag-g{background:var(--green-l);color:var(--green-d)}
-.tag-o{background:rgba(230,126,34,.1);color:var(--orange)}
-.tag-b{background:rgba(52,152,219,.1);color:#3498DB}
-.tag-r{background:rgba(231,76,60,.1);color:var(--red)}
-/* ===== 按钮 ===== */
-.btn{display:block;width:100%;padding:var(--s4);border-radius:var(--radius);border:none;font-size:var(--fs-md);font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s var(--ease);min-height:var(--touch);text-align:center;}
-.btn-primary{background:var(--green);color:#fff}
-.btn-secondary{background:var(--bg);color:var(--text)}
-.btn-outline{background:transparent;border:1.5px solid var(--green);color:var(--green)}
-.btn-danger{background:var(--red);color:#fff}
-.btn:active{transform:scale(.98)}
-.btn-sm{padding:var(--s2) var(--s4);font-size:var(--fs-sm);min-height:36px;width:auto;display:inline-flex;align-items:center;gap:var(--s1)}
-/* ===== 列表项 ===== */
-.check-item{display:flex;align-items:center;gap:var(--s3);padding:var(--s3);background:var(--bg);border-radius:var(--radius-sm);margin-bottom:2px;cursor:pointer;min-height:var(--touch);transition:background .15s var(--ease)}
-.check-item:active{background:var(--divider)}
-.check-cb{width:22px;height:22px;border:2px solid var(--text4);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s var(--ease)}
-.check-item.checked .check-cb{background:var(--green);border-color:var(--green)}
-.check-item.checked .check-cb::after{content:'';width:9px;height:5px;border:2px solid #fff;border-top:none;border-right:none;transform:rotate(-45deg) translateY(-1px)}
-/* ===== 浮层 ===== */
-.overlay{position:fixed;inset:0;z-index:200;display:flex;opacity:0;pointer-events:none;transition:opacity .3s var(--ease-o)}
-.overlay.show{opacity:1;pointer-events:auto}
-.overlay-mask{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.overlay-panel{position:absolute;bottom:0;left:0;right:0;max-height:88vh;background:var(--bg);border-radius:var(--radius-xl) var(--radius-xl) 0 0;overflow-y:auto;transform:translateY(100%);transition:transform .4s var(--ease-o)}
-.overlay.show .overlay-panel{transform:translateY(0)}
-/* ===== 全屏导航 ===== */
-.ride-full{position:fixed;inset:0;z-index:300;background:var(--text);color:#fff;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s var(--ease-o)}
-.ride-full.active{opacity:1;pointer-events:auto}
-.ride-top{display:flex;align-items:center;justify-content:space-between;padding:var(--s4) var(--s5);padding-top:max(var(--s4),env(safe-area-inset-top));background:rgba(0,0,0,.3);backdrop-filter:blur(10px)}
-.ride-title{font-size:var(--fs-sm);font-weight:600}
-.ride-map{flex:1;position:relative;background:#1a1a2e;overflow:hidden}
-.ride-map canvas{position:absolute;inset:0;width:100%;height:100%}
-.ride-data{display:flex;justify-content:space-around;padding:var(--s4);background:rgba(0,0,0,.5);border-top:1px solid rgba(255,255,255,.1)}
-.ride-datum{text-align:center}
-.ride-value{font-size:var(--fs-2xl);font-weight:200;font-variant-numeric:tabular-nums;display:block;line-height:1}
-.ride-label{font-size:var(--fs-xxs);opacity:.6;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
-.ride-ctrl{display:flex;justify-content:center;gap:var(--s4);padding:var(--s4);padding-bottom:max(var(--s4),env(safe-area-inset-bottom));background:rgba(0,0,0,.3)}
-.ride-ctrl-btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:transform .15s var(--ease);background:rgba(255,255,255,.2);color:#fff;}
-.ride-ctrl-btn:active{transform:scale(.9)}
-.ride-ctrl-sos{background:var(--red);color:#fff;animation:pulseRing 1.5s ease-in-out infinite}
-/* ===== 模态框 ===== */
-.modal-overlay{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s var(--ease);}
-.modal-overlay.show{opacity:1;pointer-events:auto;}
-.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);}
-.modal-card{position:relative;background:var(--card);border-radius:var(--radius-lg);padding:var(--s6);margin:var(--s5);text-align:center;max-width:320px;animation:fadeUp .3s var(--ease-o);width:100%;}
-.modal-icon{font-size:48px;margin-bottom:var(--s4);}
-.modal-title{font-size:var(--fs-lg);font-weight:800;margin-bottom:var(--s2);}
-.modal-desc{font-size:var(--fs-sm);color:var(--text2);margin-bottom:var(--s5);line-height:1.5;}
-.modal-actions{display:flex;gap:var(--s3);}
-.modal-actions .btn{flex:1;}
-/* ===== 引导页 ===== */
-.guide-overlay{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s var(--ease);}
-.guide-overlay.show{opacity:1;pointer-events:auto;}
-.guide-card{position:relative;background:var(--card);border-radius:var(--radius-xl);padding:var(--s8);margin:var(--s5);text-align:center;max-width:320px;animation:fadeUp .3s var(--ease-o);width:100%;}
-.guide-icon{font-size:64px;margin-bottom:var(--s4);}
-.guide-title{font-size:var(--fs-xl);font-weight:800;margin-bottom:var(--s2);}
-.guide-step{display:flex;justify-content:center;gap:4px;margin-bottom:var(--s4);}
-.guide-dot{width:8px;height:8px;border-radius:50%;background:var(--divider);}
-.guide-dot.active{background:var(--green);width:24px;border-radius:4px;}
-/* ===== Toast ===== */
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:var(--s3) var(--s5);border-radius:100px;font-size:var(--fs-sm);font-weight:600;z-index:600;white-space:nowrap;animation:fadeUp .3s var(--ease-o);}
-.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;z-index:610;pointer-events:none;animation:confetti 1.5s var(--ease-o) forwards;}
-/* ===== 其他 ===== */
-.search-bar{display:flex;align-items:center;gap:var(--s2);padding:var(--s2) var(--s4);background:var(--bg);border-radius:var(--radius);margin-bottom:var(--s4);}
-.search-bar input{border:none;background:none;flex:1;font-size:var(--fs-sm);font-family:inherit;color:var(--text);outline:none;min-height:36px;}
-.segmented{display:flex;background:var(--bg);border-radius:var(--radius-sm);padding:2px;margin-bottom:var(--s4);}
-.segmented button{flex:1;padding:var(--s2) var(--s4);border:none;background:none;font-size:var(--fs-sm);font-weight:500;color:var(--text3);cursor:pointer;border-radius:6px;font-family:inherit;transition:all .15s var(--ease);min-height:36px;}
-.segmented button.active{background:var(--card);color:var(--text);font-weight:700;box-shadow:var(--shadow-sm);}
-.progress-bar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin:var(--s2) 0;}
-.progress-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s var(--ease-o);}
-.profile-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3);}
-.grid-item{aspect-ratio:1;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s2);cursor:pointer;transition:transform .15s var(--ease);background:var(--card);}
-.grid-item:active{transform:scale(.97);}
-.grid-icon{font-size:32px;}
-.grid-label{font-size:var(--fs-xs);font-weight:600;}
-.highlight-item{animation:highlightPulse .6s ease-in-out 3;}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>去野 · 骑行助手</title>
+    <style>
+        :root {
+            --bg: #F8F7F4;
+            --surface: #EEEDEA;
+            --card: #FFFFFF;
+            --text: #1A1A1A;
+            --text2: #6B6B6B;
+            --text3: #A0A0A0;
+            --accent: #E87D22;
+            --success: #3C9D6E;
+            --danger: #D94A4A;
+            --info: #5B8EC9;
+            --shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 4px 16px rgba(0, 0, 0, .04);
+            --radius: 18px;
+            --radius-sm: 12px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100%;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .app {
+            max-width: 430px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: var(--bg);
+        }
+        .header {
+            padding: 10px 18px;
+            padding-top: max(10px, env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            background: rgba(248, 247, 244, .85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 50;
+        }
+        .brand {
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -.3px;
+            color: var(--text);
+        }
+        .weather-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 100px;
+            background: var(--surface);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+        .page-body {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 16px 8px;
+        }
+        .page-body::-webkit-scrollbar {
+            width: 0;
+        }
+        .bottom-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            margin: 0 16px;
+            margin-bottom: max(8px, env(safe-area-inset-bottom));
+            background: rgba(255, 255, 255, .9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: .5px solid rgba(0, 0, 0, .05);
+            border-radius: 24px;
+            padding: 3px;
+            flex-shrink: 0;
+            z-index: 50;
+        }
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            padding: 7px 4px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 500;
+            color: var(--text3);
+            transition: all .25s ease;
+            border-radius: 20px;
+            position: relative;
+            min-height: 48px;
+            justify-content: center;
+        }
+        .nav-item.active {
+            color: var(--text);
+            font-weight: 600;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            background: var(--surface);
+            border-radius: 18px;
+            z-index: -1;
+        }
+        .nav-item.active .nav-icon {
+            color: var(--accent);
+        }
+        .nav-icon {
+            font-size: 19px;
+            line-height: 1;
+            transition: color .25s ease;
+            color: var(--text3);
+        }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 8px;
+            margin-top: 2px;
+            padding-left: 2px;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: center;
+            transition: transform .12s ease;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+        }
+        .btn:active {
+            transform: scale(.97);
+        }
+        .hero-card {
+            background: linear-gradient(135deg, #FFF7F0, #FFEDDD);
+            border-radius: var(--radius);
+            padding: 26px 22px;
+            margin-bottom: 14px;
+            cursor: pointer;
+            transition: transform .15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: -20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(232, 125, 34, .06);
+            border-radius: 50%;
+        }
+        .hero-card:active {
+            transform: scale(.97);
+        }
+        .hero-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 100px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: transform .12s ease;
+        }
+        .hero-btn:active {
+            transform: scale(.95);
+        }
+        .equip-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .equip-chip {
+            padding: 11px 15px;
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all .2s ease;
+            border: 1px solid transparent;
+        }
+        .equip-chip:active {
+            transform: scale(.93);
+        }
+        .equip-chip.ok {
+            border-color: rgba(60, 157, 110, .25);
+            background: #F4FAF7;
+        }
+        .equip-chip.warn {
+            border-color: rgba(232, 125, 34, .25);
+            background: #FFF9F4;
+        }
+        .equip-chip.miss {
+            border-color: rgba(217, 74, 74, .25);
+            background: #FFF6F6;
+        }
+        .record-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: .5px solid rgba(0, 0, 0, .04);
+            cursor: pointer;
+        }
+        .record-item:last-child {
+            border-bottom: none;
+        }
+        .record-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 14px;
+            font-size: 20px;
+        }
+        .record-info {
+            flex: 1;
+        }
+        .record-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .record-meta {
+            font-size: 12px;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+        .record-stat {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 14px;
+        }
+        .badge-grid {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .badge-item {
+            text-align: center;
+            width: 58px;
+            cursor: pointer;
+            transition: transform .12s ease;
+        }
+        .badge-item:active {
+            transform: scale(.95);
+        }
+        .badge-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+        .badge-label {
+            font-size: 10px;
+            color: var(--text3);
+            font-weight: 500;
+        }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .overlay-mask {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .3);
+            backdrop-filter: blur(4px);
+        }
+        .overlay-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card);
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform .4s cubic-bezier(.16, 1, .3, 1);
+        }
+        .overlay.show .overlay-panel {
+            transform: translateY(0);
+        }
+        .ride-full {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: #121212;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .4s ease;
+        }
+        .ride-full.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .ride-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, .5);
+            backdrop-filter: blur(10px);
+        }
+        .ride-data {
+            display: flex;
+            justify-content: space-around;
+            padding: 22px;
+            background: rgba(0, 0, 0, .6);
+            border-top: 1px solid rgba(255, 255, 255, .06);
+        }
+        .ride-value {
+            font-size: 36px;
+            font-weight: 200;
+            display: block;
+            line-height: 1;
+            color: var(--accent);
+        }
+        .ride-label {
+            font-size: 10px;
+            opacity: .5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .ride-ctrl {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            padding: 20px;
+            background: rgba(0, 0, 0, .4);
+        }
+        .ride-ctrl-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            background: rgba(255, 255, 255, .08);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ride-ctrl-btn:active {
+            transform: scale(.9);
+        }
+        .ride-ctrl-sos {
+            background: var(--danger);
+        }
+        .toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, .92);
+            backdrop-filter: blur(20px);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 600;
+            white-space: nowrap;
+            animation: fadeIn .3s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="app" id="app">
-  <header class="header" id="headerBar"></header>
-  <main class="page-body" id="pageBody"></main>
-  <nav class="bottom-nav">
-    <button class="nav-item active" data-tab="0">🏠<span class="nav-label">首页</span></button>
-    <button class="nav-item" data-tab="1">👥<span class="nav-label">组队</span></button>
-    <div class="nav-center"><button class="nav-center-btn" onclick="openDepartPanel()">＋</button><div class="nav-center-pulse"></div></div>
-    <button class="nav-item" data-tab="2">📝<span class="nav-label">记录</span></button>
-    <button class="nav-item" data-tab="3">👤<span class="nav-label">我的</span></button>
-  </nav>
-</div>
+    <div class="app" id="app">
+        <header class="header" id="headerBar"></header>
+        <main class="page-body" id="pageBody"></main>
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="0"><span class="nav-icon">🏠</span><span>首页</span></button>
+            <button class="nav-item" data-tab="1"><span class="nav-icon">📝</span><span>记录</span></button>
+            <button class="nav-item" data-tab="2"><span class="nav-icon">👤</span><span>我的</span></button>
+        </nav>
+    </div>
 
-<!-- SOS模态框 -->
-<div class="modal-overlay" id="sosModal"><div class="modal-bg" onclick="closeModal('sosModal')"></div><div class="modal-card"><div class="modal-icon">🆘</div><div class="modal-title" style="color:var(--red)">确认发送求救信号</div><div class="modal-desc">将向紧急联系人发送实时位置与轨迹信息。</div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('sosModal')">取消</button><button class="btn btn-danger" onclick="confirmSOS()">确认求救</button></div></div></div>
-<!-- 结束骑行弹窗 -->
-<div class="modal-overlay" id="endRideModal"><div class="modal-bg" onclick="closeModal('endRideModal')"></div><div class="modal-card"><div class="modal-icon">🚴</div><div class="modal-title">结束骑行？</div><div class="modal-desc" id="endRideSummary"></div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('endRideModal')">继续骑行</button><button class="btn btn-danger" onclick="confirmEndRide()">结束骑行</button></div></div></div>
-<!-- 出发面板 -->
-<div class="overlay" id="departOverlay"><div class="overlay-mask" onclick="closeDepartPanel()"></div><div class="overlay-panel" id="departPanel"></div></div>
-<!-- 全屏导航 -->
-<div class="ride-full" id="rideFull">
-  <div class="ride-top"><div class="ride-title" id="rideTitle"></div><div class="ride-btns"><button class="ride-btn" onclick="openPlayback()">📊</button><button class="ride-btn" onclick="promptEndRide()">✕</button></div></div>
-  <div class="ride-map"><canvas id="rideCanvas"></canvas><div id="safetyAlertZone"></div></div>
-  <div class="ride-data"><div class="ride-datum"><span class="ride-value" id="rideSpeed">0.0</span><span class="ride-label">km/h</span></div><div class="ride-datum"><span class="ride-value" id="rideDist">0.0</span><span class="ride-label">km</span></div><div class="ride-datum"><span class="ride-value" id="rideTime">00:00</span><span class="ride-label">时间</span></div><div class="ride-datum"><span class="ride-value" id="rideElev">0</span><span class="ride-label">爬升m</span></div></div>
-  <div class="ride-ctrl"><button class="ride-ctrl-btn ride-ctrl-sos" onclick="openModal('sosModal')">🆘</button><button class="ride-ctrl-btn" id="ridePauseBtn" onclick="toggleRidePause()">⏸</button><button class="ride-ctrl-btn" onclick="recordVoice()">🎤</button></div>
-</div>
-<!-- 扫码 -->
-<div class="overlay" id="scanOverlay" style="align-items:center;justify-content:center;flex-direction:column;"><div class="overlay-mask" onclick="closeScan()"></div><div style="width:280px;height:280px;border-radius:var(--radius-lg);background:#fff;position:relative;overflow:hidden;z-index:1;"><div style="position:absolute;inset:0;border:2px solid var(--green);box-shadow:0 0 0 1000px rgba(0,0,0,.5);"></div><div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);animation:scanLine 2s ease-in-out infinite;"></div></div><div style="color:#fff;font-size:var(--fs-sm);margin-top:var(--s6);z-index:1">扫描队友二维码</div><button class="btn btn-secondary" style="width:auto;margin-top:var(--s4);z-index:1" onclick="closeScan()">取消</button></div>
-<!-- 路书回放 -->
-<div class="ride-full" id="playbackOverlay" style="z-index:350;"><div class="ride-top"><span class="ride-title">路书回放 · 成都→都江堰 68km</span><button class="ride-btn" onclick="closePlayback()">✕</button></div><div class="ride-map"><canvas id="playbackCanvas"></canvas></div><div class="ride-ctrl"><button class="ride-ctrl-btn" onclick="pbSeek(-10)">⏪</button><button class="ride-ctrl-btn" id="pbPlayBtn" onclick="togglePlayback()">▶</button><button class="ride-ctrl-btn" onclick="pbSeek(10)">⏩</button><span style="color:#fff;font-size:var(--fs-sm);min-width:60px;text-align:center" id="pbTime">0.0 km</span></div></div>
-<!-- 新手引导 -->
-<div class="guide-overlay" id="guideOverlay"><div class="guide-card" id="guideCard"></div></div>
+    <div class="overlay" id="departOverlay"><div class="overlay-mask" onclick="closeDepart()"></div><div class="overlay-panel" id="departPanel"></div></div>
+    <div class="overlay" id="createRouteOverlay"><div class="overlay-mask" onclick="closeCreateRoute()"></div><div class="overlay-panel" id="createRoutePanel"></div></div>
+    <div class="overlay" id="addEquipOverlay"><div class="overlay-mask" onclick="closeAddEquip()"></div><div class="overlay-panel" id="addEquipPanel"></div></div>
+    <div class="overlay" id="rideSummaryOverlay"><div class="overlay-mask"></div><div class="overlay-panel" id="rideSummaryPanel"></div></div>
+    <div class="ride-full" id="rideFull">
+        <div class="ride-top"><span id="rideTitle">骑行中</span><button class="ride-ctrl-btn" style="width:40px;height:40px;font-size:16px" onclick="endRide()">✕</button></div>
+        <div style="flex:1;background:#121212;display:flex;align-items:center;justify-content:center;font-size:64px;opacity:.08;">🗺️</div>
+        <div class="ride-data"><div><span class="ride-value" id="rideSpeed">0.0</span><span class="ride-label">km/h</span></div><div><span class="ride-value" id="rideDist">0.0</span><span class="ride-label">km</span></div><div><span class="ride-value" id="rideTime">00:00</span><span class="ride-label">时间</span></div><div><span class="ride-value" id="rideElev">0</span><span class="ride-label">爬升m</span></div></div>
+        <div class="ride-ctrl"><button class="ride-ctrl-btn ride-ctrl-sos" onclick="toast('🚨 求救信号已发送')">🆘</button><button class="ride-ctrl-btn" id="ridePauseBtn" onclick="togglePause()">⏸</button><button class="ride-ctrl-btn" onclick="toast('📸 标记已保存')">📸</button></div>
+    </div>
 
-<script>
-/* ===== 全局状态与持久化 ===== */
-const STORAGE_KEY = 'gwild_v3';
-function loadState() {
-  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) return JSON.parse(raw); } catch(e){}
-  return getDefaultState();
-}
-function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
-}
-function getDefaultState() {
-  return {
-    activeTab: 0, subPage: null, editMode: false, highlightEquipId: null,
-    rideActive: false, ridePaused: false, rideTimer: null,
-    rideData: { speed: 0, dist: 0, time: 0, elev: 412, route: '自由骑行' },
-    safetyAlerts: [], pbRunning: false, pbPos: 0, pbTimer: null,
-    selectedRouteForDepart: null,
-    equipment: [
-      { id:'bike', name:'自行车', icon:'🚲', detail:'Giant TCR', status:'ok' },
-      { id:'helmet', name:'头盔', icon:'⛑️', detail:'Giro Synthe', status:'ok' },
-      { id:'gloves', name:'手套', icon:'🧤', detail:'半指款 · 轻微磨损', status:'attention' },
-      { id:'bottle', name:'水壶×2', icon:'🫗', detail:'750ml×2 · 出发前灌满', status:'missing' },
-      { id:'pump', name:'打气筒', icon:'🔧', detail:'便携款 · CO2气瓶×2', status:'ok' },
-      { id:'tube', name:'备胎+工具', icon:'🛞', detail:'内胎×1 · 撬胎棒·六角', status:'ok' }
-    ],
-    extraEquip: [
-      { name:'能量胶×3', icon:'🍬', status:'已备' },
-      { name:'防晒霜', icon:'🧴', status:'已备' },
-      { name:'骑行眼镜', icon:'🕶️', status:'已备' },
-      { name:'雨衣', icon:'🧥', status:'未带' },
-      { name:'急救包', icon:'🩹', status:'已备' },
-      { name:'充电宝', icon:'🔋', status:'已备' }
-    ],
-    consumables: [
-      { name:'链条油', percent:60 }, { name:'内胎', percent:80 }, { name:'能量胶', percent:30 }
-    ],
-    routes: [
-      {name:'成都→都江堰', dist:'68km', time:'3.5h', elev:'412m', diff:'中级', class:'tag-o'},
-      {name:'蒲虹路爬坡', dist:'26km', time:'2h', elev:'800m', diff:'挑战', class:'tag-r'},
-      {name:'锦城绿道环线', dist:'42km', time:'2h', elev:'120m', diff:'休闲', class:'tag-g'},
-      {name:'龙泉山A面', dist:'58km', time:'3.3h', elev:'1200m', diff:'挑战', class:'tag-r'}
-    ],
-    rideRecords: [
-      {name:'锦城绿道环线', date:'今天', dist:'42km', time:'2h08m', climb:'320m', speed:'19.7 km/h'},
-      {name:'蒲虹路挑战', date:'昨天', dist:'26km', time:'1h52m', climb:'800m', speed:'13.9 km/h'},
-      {name:'夜骑锦江', date:'3天前', dist:'35km', time:'1h40m', climb:'180m', speed:'21.0 km/h'},
-      {name:'龙泉山爬坡', date:'5天前', dist:'58km', time:'3h20m', climb:'1200m', speed:'17.4 km/h'}
-    ],
-    teamMembers: [
-      {name:'张小骑', dist:'1.2km', color:'#3498DB'},
-      {name:'李达达', dist:'0.8km', color:'var(--orange)'}
-    ]
-  };
-}
-let state = loadState();
+    <script>
+        // 加载持久化状态
+        function loadState() {
+            try {
+                const raw = localStorage.getItem('gowild_state');
+                if (raw) return JSON.parse(raw);
+            } catch (e) {}
+            return getDefaultState();
+        }
 
-const statusText = { ok:'正常', attention:'注意', missing:'待补充' };
-const statusColor = { ok:'var(--green)', attention:'var(--orange)', missing:'var(--red)' };
+        function saveState() {
+            try {
+                localStorage.setItem('gowild_state', JSON.stringify(state));
+            } catch (e) {}
+        }
 
-/* ===== 导航 ===== */
-document.querySelectorAll('.nav-item').forEach(el => {
-  el.addEventListener('click', function(){
-    const t = parseInt(this.dataset.tab);
-    if(!isNaN(t)) switchTab(t);
-  });
-});
-function switchTab(t){ state.activeTab=t; state.subPage=null; state.editMode=false; state.highlightEquipId=null; updateNavActive(); updateHeader(); renderTab(t); }
-function updateNavActive(){ document.querySelectorAll('.nav-item').forEach((el,i)=>{ const tt=parseInt(el.dataset.tab); if(!isNaN(tt)) el.classList.toggle('active', tt===state.activeTab); }); }
-function updateHeader(){
-  const h=document.getElementById('headerBar');
-  if(state.subPage) h.innerHTML=`<button class="header-back" onclick="goBack()">‹</button><span class="header-title">${state.subPage.title}</span><div style="width:44px"></div>`;
-  else h.innerHTML=`<div class="brand-logo">去野</div><div class="slogan"><div class="slogan-track"><div class="slogan-item">用户主导</div><div class="slogan-item">App辅助</div><div class="slogan-item">工具即用即走</div></div></div><div class="weather-capsule" onclick="openSubPage('天气详情','weather')">☀️ 24°</div>`;
-}
-function goBack(){ state.subPage=null; state.highlightEquipId=null; updateHeader(); renderTab(state.activeTab); }
+        function getDefaultState() {
+            return {
+                activeTab: 0,
+                subPage: null,
+                selectedRoute: null,
+                rideEnding: false,
+                rideActive: false,
+                ridePaused: false,
+                rideTimer: null,
+                rideData: { speed: 25.3, dist: 0, time: 0, elev: 412 },
+                equipment: [
+                    { n: '头盔', i: '⛑️', s: 'ok' }, { n: '手套', i: '🧤', s: 'ok' }, { n: '水壶', i: '🫗', s: 'missing' },
+                    { n: '内胎×2', i: '🛞', s: 'ok' }, { n: '打气筒', i: '🔧', s: 'ok' }, { n: '能量胶', i: '🍬', s: 'attention' }
+                ],
+                routes: [
+                    { n: '成都→都江堰', d: '68km', t: '3.5h', e: '412m', v: '20.0' },
+                    { n: '蒲虹路爬坡', d: '26km', t: '2h', e: '800m', v: '13.9' },
+                    { n: '锦城绿道', d: '42km', t: '2h', e: '120m', v: '19.7' }
+                ],
+                records: [
+                    { n: '成都→都江堰', d: '5/28', s: '68km', t: '3h24m', c: '412m', v: '20.0' },
+                    { n: '蒲虹路爬坡', d: '5/25', s: '26km', t: '1h52m', c: '800m', v: '13.9' },
+                    { n: '锦城绿道', d: '5/22', s: '42km', t: '2h08m', c: '120m', v: '19.7' }
+                ],
+                totalKm: 1240,
+                totalRides: 48
+            };
+        }
 
-/* ===== 页面渲染 ===== */
-function renderTab(t){
-  const b=document.getElementById('pageBody');
-  if(state.subPage){ b.innerHTML = renderSubPage(); }
-  else if(t===0) b.innerHTML = renderHome();
-  else if(t===1) b.innerHTML = renderTeam();
-  else if(t===2) b.innerHTML = renderRecord();
-  else if(t===3) b.innerHTML = renderProfile();
-  if(state.highlightEquipId) {
-    setTimeout(()=>{
-      const el = document.getElementById('equip-'+state.highlightEquipId);
-      if(el) { el.classList.add('highlight-item'); el.scrollIntoView({behavior:'smooth',block:'center'}); }
-    },100);
-  }
-}
+        const state = loadState();
+        // 首次加载时保存默认状态
+        if (!localStorage.getItem('gowild_state')) saveState();
 
-/* ===== 首页 ===== */
-function renderHome(){
-  const issues = state.equipment.filter(e=>e.status!=='ok').length + state.extraEquip.filter(e=>e.status==='未带').length + state.consumables.filter(c=>c.percent<40).length;
-  return `<div class="page-content"><div style="margin:var(--s3) 0 var(--s5)"><div style="font-size:var(--fs-lg);font-weight:800">去野</div><div style="font-size:var(--fs-xs);color:var(--text3)">骑行决策面板</div></div>
-<div class="core-grid">
-<div class="core-item" onclick="openRoutePlanner()"><div class="core-icon">🗺️</div><div class="core-label">路线规划</div></div>
-<div class="core-item" onclick="switchTab(2)"><div class="core-icon">📝</div><div class="core-label">骑行记录</div></div>
-<div class="core-item" onclick="openEquipment()"><div class="core-icon">🛠️</div><div class="core-label">装备清单</div></div>
-</div>
-<div class="card"><div class="card-header"><span class="card-title">📱 常用功能</span><button class="card-more" onclick="toggleEditMode()">${state.editMode?'完成':'编辑'}</button></div>
-<div class="edit-grid">
-${[{i:'📋',l:'我的待办',k:'todo'},{i:'📍',l:'附近点位',k:'nearby'},{i:'📊',l:'骑行数据',k:'stats'}].map(it=>`<div class="edit-item${state.editMode?' edit-mode':''}" onclick="${state.editMode?`removeEditItem('${it.k}')`:`openSubPage('${it.l}','${it.k}')`}"><button class="edit-remove" onclick="event.stopPropagation();removeEditItem('${it.k}')">×</button><div class="edit-icon">${it.i}</div><div class="edit-label">${it.l}${it.k==='todo'&&issues>0?`<span class="tag tag-r" style="font-size:9px;margin-left:2px">${issues}</span>`:''}</div></div>`).join('')}
-</div></div>
-<div class="card"><div class="card-header"><span class="card-title">🏔️ 热门路线</span><button class="card-more" onclick="openRoutePlanner()">全部</button></div>
-${[{n:'成都→都江堰',d:'68km',t:'3.5h',tag:'中级',tc:'tag-o',bg:'linear-gradient(135deg,#e8f5e9,#a5d6a7)'},{n:'蒲虹路爬坡',d:'26km',t:'2h',tag:'挑战',tc:'tag-r',bg:'linear-gradient(135deg,#fff3e0,#ffcc80)'},{n:'锦城绿道',d:'42km',t:'2h',tag:'休闲',tc:'tag-g',bg:'linear-gradient(135deg,#e3f2fd,#90caf9)'}].map(r=>`<div class="route-card" onclick="openRouteDetail('${r.n}')"><div class="route-img" style="background:${r.bg};"></div><div class="route-overlay"><div class="route-name">${r.n}</div><div class="route-meta"><span>${r.d}</span><span>${r.t}</span></div></div><span class="route-tag ${r.tc}">${r.tag}</span></div>`).join('')}
-</div>
-<div style="padding:var(--s4);background:var(--card);border-radius:var(--radius);margin-bottom:var(--s4);font-size:var(--fs-xs);line-height:1.5;color:var(--text2)"><strong>🚴 安全提示</strong>：出发前检查刹车与胎压，佩戴头盔，遵守交通规则。长途骑行请告知家人路线与预计时间。</div></div>`;
-}
+        // 勋章定义
+        const badges = [
+            { i: '🚀', n: '破百', d: '单次骑行>100km', check: () => state.records.some(r => parseFloat(r.v) > 0 && r.s.includes('100')) },
+            { i: '⛰️', n: '爬升王', d: '累计爬升>5000m', check: () => parseInt(state.totalRides) > 10 },
+            { i: '🌙', n: '夜骑侠', d: '累计夜骑>100km', check: () => state.totalKm > 500 },
+            { i: '🔥', n: '连续7天', d: '连续7天>5km', check: () => state.totalRides > 20 },
+            { i: '💯', n: '百公里', d: '累计>1000km', check: () => state.totalKm > 1000 }
+        ];
 
-/* ===== 路线规划（纯管理，不出发） ===== */
-function openRoutePlanner(){ openSubPage('路线规划','routes'); }
-function openRouteDetail(name){ openSubPage(name,'route-detail'); }
-function renderRoutePlanner(){ return `<div class="page-content">
-<div class="search-bar"><span>🔍</span><input placeholder="搜索路线..."></div>
-<div class="segmented"><button class="active">我的路线</button><button>收藏</button><button>已下载</button></div>
-<div class="card"><div class="card-header"><span class="card-title">📋 我的路线</span><button class="card-more btn btn-sm btn-outline" onclick="addNewRoute()">＋ 新建</button></div>
-${state.routes.map(r=>`<div class="check-item" onclick="openRouteDetail('${r.name}')"><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">${r.name} <span class="tag ${r.class}">${r.diff}</span></div><div style="font-size:var(--fs-xs);color:var(--text3)">${r.dist} · ${r.time} · 爬升${r.elev}</div></div><span style="color:var(--text3);font-size:20px">›</span></div>`).join('')}
-</div>
-<div class="card"><div class="card-header"><span class="card-title">📥 导入路线</span></div><div style="display:flex;gap:var(--s3)"><button class="btn btn-secondary" style="flex:1" onclick="toast('请选择GPX文件')">📁 GPX导入</button><button class="btn btn-secondary" style="flex:1" onclick="toast('请选择历史轨迹')">📝 轨迹创建</button></div></div></div>`; }
-function addNewRoute(){ const name=prompt('路线名称：'); if(!name)return; const dist=prompt('距离（km）：'); const elev=prompt('爬升（m）：'); state.routes.push({name, dist:dist+'km', time:'未知', elev:elev+'m', diff:'休闲', class:'tag-g'}); saveState(); toast('路线已创建'); renderTab(state.activeTab); }
+        function switchTab(t) {
+            state.activeTab = t;
+            state.subPage = null;
+            document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === t));
+            updateHeader();
+            render();
+        }
 
-function renderRouteDetail(){
-  const r = state.routes.find(r=>r.name===state.subPage.title) || {name:state.subPage.title, dist:'未知', time:'未知', elev:'未知', diff:'未知', class:'tag-o'};
-  const segments = r.name.includes('都江堰') ? [
-    {n:'成都市区出发', d:'0-8km', e:'平路', c:'var(--green)', m:'城市道路，注意红绿灯'},
-    {n:'郫都区段', d:'8-22km', e:'缓上坡', c:'var(--orange)', m:'G213国道，路况良好'},
-    {n:'安德镇段', d:'22-42km', e:'起伏路', c:'var(--gold)', m:'经过安德镇，可补给'},
-    {n:'都江堰冲刺', d:'42-68km', e:'缓下坡', c:'var(--blue)', m:'进入都江堰市区'}
-  ] : r.name.includes('蒲虹') ? [
-    {n:'山脚起步', d:'0-5km', e:'缓坡', c:'var(--green)', m:'热身路段'},
-    {n:'发夹弯段', d:'5-12km', e:'陡坡', c:'var(--orange)', m:'坡度12-15%'},
-    {n:'山脊线', d:'12-20km', e:'起伏', c:'var(--gold)', m:'横风较强'},
-    {n:'山顶冲刺', d:'20-26km', e:'缓坡', c:'var(--blue)', m:'最后6km'}
-  ] : [
-    {n:'起点段', d:'0-10km', e:'平路', c:'var(--green)', m:'路况良好'},
-    {n:'中段', d:'10-30km', e:'起伏', c:'var(--orange)', m:'注意横风'},
-    {n:'终点段', d:'30-42km', e:'平路', c:'var(--green)', m:'返回起点'}
-  ];
-  return `<div class="page-content">
-<div class="route-detail-map" style="background:linear-gradient(135deg,#e8f5e9,#a5d6a7);display:flex;align-items:center;justify-content:center;font-size:48px;">🗺️</div>
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)"><div><div style="font-size:var(--fs-lg);font-weight:800">${r.name}</div><div style="font-size:var(--fs-xs);color:var(--text3)">${r.dist} · ${r.time} · 爬升${r.elev} · <span class="tag ${r.class}">${r.diff}</span></div></div></div>
-<div class="card"><div class="card-header"><span class="card-title">📍 分段详情</span></div>
-${segments.map(s=>`<div class="segment-item"><div class="segment-dot" style="background:${s.c}"></div><div class="segment-info"><div class="segment-name">${s.n}</div><div class="segment-meta">${s.d} · ${s.e} · ${s.m}</div></div></div>`).join('')}</div>
-<div class="card"><div class="card-header"><span class="card-title">🛑 补给点</span></div>
-<div class="check-item"><div>📍</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">安德镇加油站</div><div style="font-size:var(--fs-xs);color:var(--text3)">22km · 便利店·卫生间</div></div></div>
-<div class="check-item"><div>📍</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">都江堰入口</div><div style="font-size:var(--fs-xs);color:var(--text3)">42km · 餐厅·补水</div></div></div></div>
-<div class="card"><div class="card-header"><span class="card-title">⚠️ 注意事项</span></div><div style="font-size:var(--fs-sm);color:var(--text2);line-height:1.6">• 郫都段大车较多，靠右骑行<br>• 安德镇后无补给，提前备水<br>• 建议清晨出发，避开午后高温</div></div>
-<div style="display:flex;gap:var(--s3)"><button class="btn btn-secondary" style="flex:1" onclick="toast('已分享路线')">📤 分享</button><button class="btn btn-primary" style="flex:1" onclick="selectRouteForDepart('${r.name}')">🚴 用此路线出发</button></div></div>`;
-}
+        function updateHeader() {
+            const h = document.getElementById('headerBar');
+            if (state.subPage) {
+                h.innerHTML =
+                    `<button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--accent)" onclick="goBack()">‹</button><span style="font-weight:600;font-size:16px">${state.subPage.title}</span><div></div>`;
+            } else {
+                h.innerHTML =
+                    `<div class="brand">去野</div><div class="weather-pill" onclick="openSub('天气详情','weather')">☀️ 24°</div>`;
+            }
+        }
 
-function selectRouteForDepart(routeName){
-  state.selectedRouteForDepart = routeName;
-  saveState();
-  goBack();
-  setTimeout(()=>{ openDepartPanel(); },200);
-  toast('已选择：'+routeName);
-}
+        function goBack() { state.subPage = null;
+            updateHeader();
+            render(); }
 
-/* ===== 出发面板（唯一出发入口） ===== */
-function openDepartPanel(){
-  const selected = state.selectedRouteForDepart ? `已选: ${state.selectedRouteForDepart}` : '点击选择路线';
-  document.getElementById('departPanel').innerHTML = `<div style="padding:var(--s6)"><div style="width:36px;height:5px;background:var(--text4);border-radius:100px;margin:0 auto var(--s5)"></div><div style="text-align:center;margin-bottom:var(--s6)"><div style="font-size:var(--fs-lg);font-weight:800">选择出发方式</div><div style="font-size:var(--fs-xs);color:var(--text3)">唯一出行入口 · 修行而非炫耀</div></div>
-<div class="check-item" onclick="triggerDepart('route')" style="border:2px solid var(--divider);border-radius:var(--radius);padding:var(--s4);margin-bottom:var(--s3)"><div><div style="font-size:var(--fs-md);font-weight:700">选择路线出发</div><div style="font-size:var(--fs-xs);color:${state.selectedRouteForDepart?'var(--green)':'var(--text3)'};margin-top:4px">${selected}</div></div><div style="font-size:24px">🗺️</div></div>
-<div class="check-item" onclick="triggerDepart('free')" style="border:2px solid var(--divider);border-radius:var(--radius);padding:var(--s4);margin-bottom:var(--s3)"><div><div style="font-size:var(--fs-md);font-weight:700">自由记录直接开始</div><div style="font-size:var(--fs-xs);color:var(--text3)">不设路线，纯记录轨迹</div></div><div style="font-size:24px">🎯</div></div>
-<button class="btn btn-secondary" onclick="closeDepartPanel()">取消</button></div>`;
-  document.getElementById('departOverlay').classList.add('show');
-}
-function closeDepartPanel(){ document.getElementById('departOverlay').classList.remove('show'); }
-function triggerDepart(type){
-  closeDepartPanel();
-  if(type==='free') { state.selectedRouteForDepart=null; openSubPage('出发确认','departConfirm'); }
-  else if(state.selectedRouteForDepart) openSubPage('出发确认','departConfirm');
-  else { toast('请先在路线详情页选择路线'); openRoutePlanner(); }
-}
+        function openSub(t, k) { state.subPage = { title: t, key: k };
+            updateHeader();
+            render(); }
 
-function renderDepartConfirm(){
-  const routeName = state.selectedRouteForDepart || '自由骑行';
-  const missingCount = state.equipment.filter(e=>e.status==='missing').length + state.extraEquip.filter(e=>e.status==='未带').length;
-  return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">出发确认</span></div>
-<div style="margin-bottom:var(--s4)"><div style="font-size:var(--fs-sm);font-weight:600">路线</div><div style="font-size:var(--fs-xs);color:var(--text3)">${routeName} ${state.selectedRouteForDepart?state.routes.find(r=>r.name===routeName)?.dist||'':''}</div></div>
-<div style="margin-bottom:var(--s4)"><div style="font-size:var(--fs-sm);font-weight:600">天气</div><div style="font-size:var(--fs-xs);color:var(--text3)">☀️ 晴 24° 东南风2级</div></div>
-<div style="margin-bottom:var(--s4)"><div style="font-size:var(--fs-sm);font-weight:600">装备</div><div style="font-size:var(--fs-xs);color:${missingCount===0?'var(--green)':'var(--red)'}">${missingCount===0?'✅ 全部就绪':`⚠️ ${missingCount}项未准备`}</div></div>
-<button class="btn btn-primary" onclick="startRideFromConfirm('${routeName}')">▶️ 开始骑行</button></div></div>`;
-}
-function startRideFromConfirm(routeName){ goBack(); startRide(routeName); }
+        function render() {
+            const b = document.getElementById('pageBody');
+            if (state.subPage) { b.innerHTML = renderSub(); return; }
+            if (state.activeTab === 0) b.innerHTML = renderHome();
+            else if (state.activeTab === 1) b.innerHTML = renderRecord();
+            else b.innerHTML = renderProfile();
+        }
 
-/* ===== 骑行导航 ===== */
-function startRide(routeName){ state.rideActive=true; state.ridePaused=false; state.rideData={ speed:25.3, dist:0, time:0, elev:412, route:routeName }; state.safetyAlerts=[{km:8,type:'warning',msg:'前方急弯，请减速'},{km:15,type:'info',msg:'横风路段，注意控车'}].map(a=>({...a,shown:false})); document.getElementById('rideFull').classList.add('active'); document.getElementById('rideTitle').textContent='骑行中 · '+routeName; document.getElementById('ridePauseBtn').textContent='⏸'; updateRideUI(); drawRideMap(); if(state.rideTimer)clearInterval(state.rideTimer); state.rideTimer=setInterval(()=>{ if(!state.ridePaused){ state.rideData.time+=1; state.rideData.dist+=0.007; state.rideData.speed=25+Math.sin(state.rideData.time/60)*3+(Math.random()-.5)*2; updateRideUI(); checkSafetyAlerts(); } },1000); }
-function promptEndRide(){ const d=state.rideData; const m=Math.floor(d.time/60),s=d.time%60; document.getElementById('endRideSummary').innerHTML=`• ${d.dist.toFixed(1)}km<br>• ${m}分${s}秒<br>• 均速 ${d.speed.toFixed(1)}km/h`; openModal('endRideModal'); }
-function confirmEndRide(){ closeModal('endRideModal'); const d=state.rideData; const m=Math.floor(d.time/60),s=d.time%60; state.rideRecords.unshift({name:d.route, date:'刚刚', dist:d.dist.toFixed(1)+'km', time:m+'分'+s+'秒', climb:d.elev+'m', speed:d.speed.toFixed(1)+' km/h'}); saveState(); state.rideActive=false; clearInterval(state.rideTimer); document.getElementById('rideFull').classList.remove('active'); toast('记录已保存'); switchTab(0); }
-function toggleRidePause(){ state.ridePaused=!state.ridePaused; document.getElementById('ridePauseBtn').textContent=state.ridePaused?'▶':'⏸'; }
-function updateRideUI(){ document.getElementById('rideSpeed').textContent=state.rideData.speed.toFixed(1); document.getElementById('rideDist').textContent=state.rideData.dist.toFixed(1); const m=Math.floor(state.rideData.time/60),s=state.rideData.time%60; document.getElementById('rideTime').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); document.getElementById('rideElev').textContent=state.rideData.elev; }
-function checkSafetyAlerts(){ const zone=document.getElementById('safetyAlertZone'); state.safetyAlerts.forEach(a=>{ if(Math.abs(state.rideData.dist-a.km)<.5&&!a.shown){ a.shown=true; zone.innerHTML=`<div style="position:absolute;top:16px;left:16px;right:16px;background:${a.type==='warning'?'var(--orange)':'var(--red)'};color:#fff;padding:12px;border-radius:var(--radius);animation:fadeUp .3s">${a.msg}</div>`; setTimeout(()=>zone.innerHTML='',4000); } }); }
-function drawRideMap(){ const c=document.getElementById('rideCanvas'); if(!c)return; const w=c.parentElement.clientWidth,h=c.parentElement.clientHeight; c.width=w*2;c.height=h*2; const ctx=c.getContext('2d'); ctx.scale(2,2); ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,w,h); ctx.strokeStyle='rgba(46,204,113,.3)'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(0,h*.6); ctx.quadraticCurveTo(w*.3,h*.4,w*.5,h*.5); ctx.quadraticCurveTo(w*.7,h*.6,w,h*.4); ctx.stroke(); }
+        function renderHome() {
+            const issues = state.equipment.filter(e => e.s !== 'ok').length;
+            return `
+            <div class="card" style="background:linear-gradient(135deg,#F9F7F2,#F4EFE6);padding:22px 20px;margin-top:6px">
+              <div class="row"><span style="font-size:38px;font-weight:700">24°</span><span style="font-size:14px;color:var(--accent);font-weight:600">适合骑行</span></div>
+              <div style="font-size:13px;color:var(--text2);margin-top:4px">晴 · 东南风2级 · 未来3h无雨</div>
+              <div style="display:flex;gap:22px;margin-top:16px">
+                <div><span style="font-size:11px;color:var(--text3)">湿度</span><br><span style="font-weight:600">58%</span></div>
+                <div><span style="font-size:11px;color:var(--text3)">UV指数</span><br><span style="font-weight:600">中等</span></div>
+                <div><span style="font-size:11px;color:var(--text3)">日落</span><br><span style="font-weight:600">19:24</span></div>
+              </div>
+            </div>
+            <div class="hero-card" onclick="openDepart()">
+              <div style="font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.5px;text-transform:uppercase">开始骑行</div>
+              <div style="font-size:28px;font-weight:700;margin-top:4px">准备好出发了吗？</div>
+              <div style="font-size:14px;color:var(--text2);margin-top:4px">选择路线或自由记录，即刻开始</div>
+              <button class="hero-btn">＋ 出发</button>
+            </div>
+            <div class="section-title">我的路线</div>
+            <div class="card">
+              ${state.routes.map(r => `<div class="record-item" onclick="openSub('${r.n}','route-detail')"><div class="record-icon">🗺️</div><div class="record-info"><div class="record-name">${r.n}</div><div class="record-meta">${r.d} · ${r.t} · ${r.e}</div></div><span style="color:var(--text3)">›</span></div>`).join('')}
+              <button class="btn btn-secondary" style="margin-top:8px" onclick="openCreateRoute()">＋ 新建路线</button>
+            </div>
+            <div class="section-title">出发准备</div>
+            <div class="card" onclick="openSub('装备清单','equip')" style="cursor:pointer">
+              <div class="row"><span style="font-weight:600;font-size:16px">🛠️ 装备清单</span>${issues>0?`<span style="font-size:12px;color:var(--danger);font-weight:600">${issues}项待处理</span>`:'<span style="font-size:12px;color:var(--success);font-weight:600">就绪</span>'}</div>
+              <div class="equip-grid" style="margin-top:12px">${state.equipment.map(e=>`<div class="equip-chip ${e.s==='ok'?'ok':e.s==='attention'?'warn':'miss'}">${e.i} ${e.n}</div>`).join('')}</div>
+            </div>
+            <div class="card" onclick="openSub('维修手册','repair')" style="cursor:pointer">
+              <div class="row"><span style="font-weight:600;font-size:16px">🔧 维修手册</span><span style="color:var(--text3)">›</span></div>
+              <div style="font-size:13px;color:var(--text2);margin-top:4px">补胎·换胎·链条·刹车·安全应急 · 离线可用</div>
+            </div>
+          `;
+        }
 
-/* ===== 装备清单 ===== */
-function openEquipment(){ openSubPage('装备清单','equip'); }
-function cycleEquipStatus(id){
-  const e=state.equipment.find(e=>e.id===id);
-  const statuses=['ok','attention','missing'];
-  e.status=statuses[(statuses.indexOf(e.status)+1)%3];
-  saveState();
-  renderTab(state.activeTab);
-}
-function cycleExtraStatus(idx){
-  const statuses=['已备','未带'];
-  state.extraEquip[idx].status=statuses[(statuses.indexOf(state.extraEquip[idx].status)+1)%2];
-  saveState();
-  renderTab(state.activeTab);
-}
-function renderEquipment(){
-  return `<div class="page-content">
-<div class="card"><div class="card-header"><span class="card-title">🛠️ 核心装备</span><span class="tag tag-g">${state.equipment.length}项</span></div>
-${state.equipment.map(e=>`<div class="equip-item" id="equip-${e.id}"><div style="font-size:20px;width:28px;text-align:center">${e.icon}</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:500">${e.name}</div><div style="font-size:var(--fs-xxs);color:var(--text3)">${e.detail}</div></div><div style="font-size:var(--fs-xxs);font-weight:600;cursor:pointer;color:${statusColor[e.status]}" onclick="cycleEquipStatus('${e.id}')">${statusText[e.status]}</div></div>`).join('')}</div>
-<div class="equip-cat collapsed"><div class="equip-cat-header" onclick="this.parentElement.classList.toggle('collapsed')"><span style="font-size:var(--fs-sm);font-weight:700">📦 补充装备 <span class="tag tag-b">${state.extraEquip.length}项</span></span><span style="transition:transform .2s;font-size:12px;color:var(--text3)">▼</span></div><div class="equip-cat-body">
-${state.extraEquip.map((e,i)=>`<div class="equip-item"><div style="font-size:20px;width:28px;text-align:center">${e.icon}</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:500">${e.name}</div></div><div style="font-size:var(--fs-xxs);font-weight:600;cursor:pointer;color:${e.status==='未带'?'var(--red)':'var(--green)'}" onclick="cycleExtraStatus(${i})">${e.status}</div></div>`).join('')}</div></div>
-<div class="card"><div class="card-header"><span class="card-title">📊 消耗追踪</span></div>${state.consumables.map(c=>`<div style="margin-bottom:var(--s3)"><div style="display:flex;justify-content:space-between;font-size:var(--fs-xs);margin-bottom:var(--s1)"><span>${c.name}</span><span style="color:${c.percent<40?'var(--red)':'var(--text3)'}">${c.percent}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${c.percent}%;background:${c.percent<40?'var(--red)':c.percent<70?'var(--orange)':'var(--green)'}"></div></div></div>`).join('')}</div></div>`;
-}
+        function renderRecord() {
+            const records = state.records;
+            return `
+            <div style="margin-top:6px">
+              <div class="section-title">本月统计</div>
+              <div class="row card" style="padding:22px">
+                <div style="text-align:center;flex:1"><div style="font-size:32px;font-weight:700">320</div><div style="font-size:11px;color:var(--text3)">公里</div></div>
+                <div style="text-align:center;flex:1"><div style="font-size:32px;font-weight:700">8</div><div style="font-size:11px;color:var(--text3)">次骑行</div></div>
+                <div style="text-align:center;flex:1"><div style="font-size:32px;font-weight:700">2.4k</div><div style="font-size:11px;color:var(--text3)">爬升m</div></div>
+              </div>
+              <div class="section-title">最近记录</div>
+              <div class="card">${records.map(r=>`<div class="record-item" onclick="openSub('${r.n}','rec-detail')"><div class="record-icon">🗺️</div><div class="record-info"><div class="record-name">${r.n}</div><div class="record-meta">${r.d} · ${r.s} · ${r.t} · ${r.c}</div></div><div class="record-stat">${r.v} km/h</div></div>`).join('')}</div>
+              <button class="btn btn-primary" style="margin-top:8px" onclick="toast('正在生成3D路书...')">🎬 查看3D路书回放</button>
+            </div>
+          `;
+        }
 
-/* ===== 待办系统 ===== */
-function renderTodo(){
-  const items = [];
-  state.equipment.filter(e=>e.status!=='ok').forEach(e=>items.push({type:'equip',id:e.id,name:`${e.name} ${statusText[e.status]}`, src:'核心装备', color:statusColor[e.status]}));
-  state.extraEquip.filter(e=>e.status==='未带').forEach((e,i)=>items.push({type:'extra',idx:i,name:`${e.name} 未带`, src:'补充装备', color:'var(--red)'}));
-  state.consumables.filter(c=>c.percent<40).forEach(c=>items.push({type:'consum',name:c.name, src:`仅剩${c.percent}%`, color:'var(--orange)'}));
-  return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">📋 我的待办</span><span class="tag tag-o">${items.length}项</span></div>
-${items.length===0?'<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-desc">一切就绪，准备出发！</div></div>':
-items.map(t=>`<div class="check-item"><div class="check-cb"></div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">${t.name}</div><div style="font-size:var(--fs-xs);color:${t.color}">${t.src}</div></div>
-${t.type==='equip'?`<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();gotoEquip('${t.id}')">去处理</button>`:t.type==='extra'?`<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();markExtraReady(${t.idx})">标记已带</button>`:`<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();markConsumFull('${t.name}')">已补充</button>`}
-</div>`).join('')}
-</div><div style="font-size:var(--fs-xs);color:var(--text3);text-align:center;padding:var(--s4)">📌 异常项自动从装备清单与消耗追踪提取</div></div>`;
-}
-function gotoEquip(id){ state.highlightEquipId=id; openEquipment(); }
-function markExtraReady(idx){ state.extraEquip[idx].status='已备'; saveState(); toast('已标记为已携带'); renderTab(state.activeTab); }
-function markConsumFull(name){ const c=state.consumables.find(c=>c.name===name); if(c){ c.percent=100; } saveState(); toast('已标记为充足'); renderTab(state.activeTab); }
+        function renderProfile() {
+            return `
+            <div style="text-align:center;padding:32px 0 20px">
+              <div style="width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#F9F7F2,#F4EFE6);display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 14px">🚴</div>
+              <div style="font-weight:700;font-size:20px">骑行达人</div>
+              <div class="row" style="justify-content:center;gap:36px;margin-top:14px">
+                <div style="text-align:center"><div style="font-weight:700;font-size:20px">${state.totalKm.toLocaleString()}</div><div style="font-size:11px;color:var(--text3)">总公里</div></div>
+                <div style="text-align:center"><div style="font-weight:700;font-size:20px">${state.totalRides}</div><div style="font-size:11px;color:var(--text3)">总骑行</div></div>
+              </div>
+            </div>
+            <div class="section-title">成就勋章</div>
+            <div class="card"><div class="badge-grid">${badges.map(b=>{
+              const unlocked = b.check();
+              return `<div class="badge-item" onclick="toast('${b.n}: ${b.d} (${unlocked?'已获得':'未达成'})')"><div class="badge-icon" style="opacity:${unlocked?1:.35}">${b.i}</div><div class="badge-label">${b.n}</div></div>`;
+            }).join('')}</div></div>
+            <div class="section-title">设置</div>
+            <div class="card">${[
+              {n:'账号安全',k:'account'},{n:'离线地图',k:'offline'},{n:'通知提醒',k:'notify'},
+              {n:'隐私设置',k:'privacy'},{n:'关于去野',k:'about'}
+            ].map(s=>`<div class="record-item" onclick="openSub('${s.n}','settings-${s.k}')"><span style="flex:1;font-size:15px">${s.n}</span><span style="color:var(--text3)">›</span></div>`).join('')}</div>
+          `;
+        }
 
-/* ===== 组队 ===== */
-function renderTeam(){
-  const members = state.teamMembers;
-  return `<div class="page-content">
-<div class="card"><div class="card-header"><span class="card-title">👥 组队</span><button class="card-more" onclick="openScan()">扫一扫</button></div>
-<div style="text-align:center;padding:var(--s6) 0"><div style="width:200px;height:200px;margin:0 auto;background:conic-gradient(from 0deg,var(--green),var(--green-d),var(--green));border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:48px;color:#fff">👤</div><div style="margin-top:var(--s3);font-size:var(--fs-sm);font-weight:600">我的二维码</div><div style="font-size:var(--fs-xs);color:var(--text3)">骑行达人 · 1,240km</div></div>
-<div style="display:flex;gap:var(--s3);margin-top:var(--s4)"><button class="btn btn-secondary" onclick="openScan()">扫一扫添加</button><button class="btn btn-primary" onclick="toast('已复制分享链接')">分享二维码</button></div></div>
-<div class="card"><div class="card-header"><span class="card-title">🚴 当前组队</span><span class="tag tag-g">${members.length+1}人</span></div>
-<div class="check-item checked"><div class="check-cb" style="background:var(--green);border-color:var(--green)"></div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">你 👑</div><div style="font-size:var(--fs-xs);color:var(--text3)">队长 · 0km</div></div></div>
-${members.map(m=>`<div class="check-item"><div class="check-cb" style="background:${m.color};border-color:${m.color}"></div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">${m.name}</div><div style="font-size:var(--fs-xs);color:var(--text3)">成员 · ${m.dist}</div></div></div>`).join('')}
-</div>
-<div class="card"><div class="card-header"><span class="card-title">💬 快捷聊天</span></div><div style="display:flex;flex-wrap:wrap;gap:var(--s2)">${['准备出发','我在路上','休息一下','需要帮助','已到达','改路线','装备检查','天气变化'].map(p=>`<button style="padding:var(--s2) var(--s3);border:1px solid var(--divider);border-radius:100px;background:var(--bg);font-size:var(--fs-xs);cursor:pointer;min-height:36px" onclick="toast('发送: ${p}')">${p}</button>`).join('')}</div></div></div>`;
-}
+        function renderSub() {
+            const k = state.subPage.key;
+            if (k === 'weather') return `
+            <div style="margin-top:6px">
+              <div class="card" style="background:linear-gradient(135deg,#F9F7F2,#F4EFE6);padding:22px 20px">
+                <div style="font-size:14px;color:var(--accent);font-weight:600">成都 · 当前天气</div>
+                <div style="font-size:48px;font-weight:700;margin-top:8px">24°</div>
+                <div style="font-size:15px;color:var(--text2);margin-top:4px">晴 · 东南风2级</div>
+                <div style="display:flex;gap:22px;margin-top:20px">
+                  <div><span style="font-size:11px;color:var(--text3)">湿度</span><br><span style="font-weight:600">58%</span></div>
+                  <div><span style="font-size:11px;color:var(--text3)">UV指数</span><br><span style="font-weight:600">中等</span></div>
+                  <div><span style="font-size:11px;color:var(--text3)">气压</span><br><span style="font-weight:600">1012hPa</span></div>
+                  <div><span style="font-size:11px;color:var(--text3)">日落</span><br><span style="font-weight:600">19:24</span></div>
+                </div>
+              </div>
+              <div class="card"><div class="section-title">未来3小时</div>
+                <div class="row">${[{t:'现在',i:'☀️',v:'24°'},{t:'1h后',i:'☀️',v:'25°'},{t:'2h后',i:'⛅',v:'23°'},{t:'3h后',i:'⛅',v:'22°'}].map(h=>`<div style="text-align:center"><div style="font-size:11px;color:var(--text3)">${h.t}</div><div style="font-size:28px;margin:4px 0">${h.i}</div><div style="font-size:14px;font-weight:600">${h.v}</div></div>`).join('')}</div>
+              </div>
+            </div>`;
+            if (k === 'route-detail') {
+                const r = state.routes.find(r => r.n === state.subPage.title) || state.routes[0];
+                return `
+              <div style="margin-top:6px">
+                <div class="card"><div class="section-title">${r.n}</div><div style="font-size:14px;color:var(--text2)">${r.d} · ${r.t} · ${r.e}</div></div>
+                <div class="card"><div class="section-title">📍 分段详情</div>
+                  <div class="record-item"><div style="width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:10px"></div><div><strong>起点段</strong><br><span style="font-size:12px;color:var(--text2)">平路 · 路况良好</span></div></div>
+                  <div class="record-item"><div style="width:10px;height:10px;border-radius:50%;background:var(--accent);margin-right:10px"></div><div><strong>爬坡段</strong><br><span style="font-size:12px;color:var(--text2)">缓上坡 · 注意变速</span></div></div>
+                  <div class="record-item"><div style="width:10px;height:10px;border-radius:50%;background:var(--info);margin-right:10px"></div><div><strong>终点段</strong><br><span style="font-size:12px;color:var(--text2)">缓下坡 · 控制车速</span></div></div>
+                </div>
+                <div class="card"><div class="section-title">⚠️ 注意事项</div><div style="font-size:13px;color:var(--text2);line-height:1.6">• 部分路段大车较多，靠右骑行<br>• 中途有补给点，可休息补充<br>• 建议清晨出发，避开午后高温</div></div>
+                <button class="btn btn-primary" onclick="selectAndDepart('${r.n}')">🚴 用此路线出发</button>
+              </div>`;
+            }
+            if (k === 'rec-detail') {
+                const r = state.records.find(r => r.n === state.subPage.title) || state.records[0];
+                return `
+              <div style="margin-top:6px">
+                <div class="card"><div class="section-title">${r.n}</div><div style="font-size:14px;color:var(--text2)">${r.d} · ${r.s} · ${r.t} · ${r.c} · 均速${r.v}km/h</div></div>
+                <div class="card"><div class="section-title">📸 沿途记忆</div>
+                  <div class="record-item"><div style="font-size:20px;margin-right:10px">📍</div><div><strong>起点</strong><br><span style="font-size:12px;color:var(--text2)">天气晴朗，微风</span></div></div>
+                  <div class="record-item"><div style="font-size:20px;margin-right:10px">📸</div><div><strong>中途拍照</strong><br><span style="font-size:12px;color:var(--text2)">路过彩虹桥</span></div></div>
+                  <div class="record-item"><div style="font-size:20px;margin-right:10px">☕</div><div><strong>补给休息</strong><br><span style="font-size:12px;color:var(--text2)">补充水分和能量胶</span></div></div>
+                  <div class="record-item"><div style="font-size:20px;margin-right:10px">🏁</div><div><strong>终点</strong><br><span style="font-size:12px;color:var(--text2)">完成骑行</span></div></div>
+                </div>
+                <button class="btn btn-primary" onclick="toast('正在生成3D路书...')">🎬 查看3D路书回放</button>
+              </div>`;
+            }
+            if (k === 'departConfirm') {
+                const routeName = state.selectedRoute || '自由骑行';
+                const issues = state.equipment.filter(e => e.s !== 'ok').length;
+                return `
+              <div style="margin-top:6px">
+                <div class="card">
+                  <div class="section-title">确认出发</div>
+                  <div style="margin-bottom:12px"><span style="color:var(--text2)">路线：</span><strong>${routeName}</strong></div>
+                  <div style="margin-bottom:12px"><span style="color:var(--text2)">天气：</span>晴 24° 东南风2级</div>
+                  <div style="margin-bottom:12px"><span style="color:var(--text2)">装备：</span>${issues>0?`<span style="color:var(--danger)">${issues}项待处理</span>`:'<span style="color:var(--success)">全部就绪 ✅</span>'}</div>
+                  <button class="btn btn-primary" onclick="startRide()">▶️ 开始骑行</button>
+                </div>
+              </div>`;
+            }
+            if (k === 'equip') return `
+            <div style="margin-top:6px">
+              <div class="section-title">装备清单</div>
+              <div class="card">
+                <div class="equip-grid">${state.equipment.map((e,i)=>`<div class="equip-chip ${e.s==='ok'?'ok':e.s==='attention'?'warn':'miss'}" onclick="cycleEquip(${i})">${e.i} ${e.n}</div>`).join('')}</div>
+              </div>
+              <button class="btn btn-secondary" style="margin-top:8px" onclick="openAddEquip()">＋ 添加装备</button>
+            </div>`;
+            if (k === 'repair') {
+                const tutorials = [
+                    { t: '补胎教程', d: '1. 找到漏气点<br>2. 打磨内胎<br>3. 涂胶水<br>4. 贴补片<br>5. 按压3分钟' },
+                    { t: '换内胎', d: '1. 拆卸车轮<br>2. 取出破损内胎<br>3. 检查外胎内侧<br>4. 装入新内胎<br>5. 充气至标准胎压' },
+                    { t: '链条上油', d: '1. 清洁链条<br>2. 逐节滴润滑油<br>3. 转动曲柄<br>4. 擦去多余油' },
+                    { t: '刹车调整', d: '1. 检查来令片磨损<br>2. 调节刹车线松紧<br>3. 测试刹车力度' }
+                ];
+                return `
+              <div style="margin-top:6px">
+                <div class="section-title">维修手册</div>
+                <div class="card">
+                  ${tutorials.map(t => `
+                    <div class="record-item" onclick="toggleRepair(this)">
+                      <div class="record-icon">🛞</div>
+                      <div class="record-info">
+                        <div class="record-name">${t.t}</div>
+                        <div class="repair-detail" style="display:none;font-size:13px;color:var(--text2);margin-top:4px;line-height:1.6">${t.d}</div>
+                      </div>
+                      <span class="repair-arrow" style="color:var(--text3)">▼</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>`;
+            }
+            if (k.startsWith('settings-')) {
+                const titles = { account: '账号安全', offline: '离线地图', notify: '通知提醒', privacy: '隐私设置',
+                    about: '关于去野' };
+                const descs = { account: '手机号绑定 · 修改密码 · 注销账号', offline: '管理离线地图包 · 下载新区域 · 清理缓存',
+                    notify: '推送通知 · 声音与振动 · 勿扰模式', privacy: '位置权限 · 数据共享 · 黑名单管理',
+                    about: '去野 v1.0 · 纯工具骑行助手 · 开发者团队' };
+                const key = k.replace('settings-', '');
+                return `<div style="margin-top:6px"><div class="card"><div class="section-title">${titles[key]}</div><div style="font-size:14px;color:var(--text2);line-height:1.6">${descs[key]}</div></div></div>`;
+            }
+            return `<div style="text-align:center;padding:40px;color:var(--text3)">功能开发中</div>`;
+        }
 
-/* ===== 记录 ===== */
-function renderRecord(){
-  const records = state.rideRecords;
-  const routeRecords = records.filter(r=>r.name.includes('蒲虹路'));
-  const maxSpeed = routeRecords.length>0 ? Math.max(...routeRecords.map(r=>parseFloat(r.speed))) : 40;
-  return `<div class="page-content">
-<div class="search-bar"><span>🔍</span><input placeholder="搜索轨迹..."></div>
-<div class="segmented"><button class="active">全部</button><button>本月</button><button>收藏</button></div>
-<div class="card"><div class="card-header"><span class="card-title">📊 轨迹列表</span><span class="tag tag-g">${records.length}条</span></div>
-${records.map(r=>`<div class="check-item" onclick="openRecordDetail('${r.name}')"><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">${r.name}</div><div style="font-size:var(--fs-xs);color:var(--text3)">${r.date} · ${r.dist} · ${r.time} · 爬升${r.climb}</div></div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--green)">${r.speed}</div></div>`).join('')}
-</div>
-<div class="card"><div class="card-header"><span class="card-title">📈 重复挑战对比</span><span class="tag tag-o">蒲虹路</span></div>
-<div style="height:120px;display:flex;align-items:flex-end;gap:var(--s2);margin-bottom:var(--s3)">
-${routeRecords.length===0?'<div class="empty-state"><div class="empty-desc">暂无挑战记录</div></div>':
-routeRecords.map((r,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="width:80%;background:var(--green);border-radius:var(--radius-sm) var(--radius-sm) 0 0;height:${(parseFloat(r.speed)/maxSpeed)*100}%"></div><div style="font-size:var(--fs-xxs);margin-top:4px">${r.date}</div></div>`).join('')}
-</div><div style="font-size:var(--fs-xs);color:var(--text3)">同一路线${routeRecords.length}次挑战 · 最佳 ${maxSpeed.toFixed(1)} km/h</div></div>
-<button class="btn btn-primary" onclick="openPlayback()">🎬 查看3D路书回放</button></div>`;
-}
+        // 维修手册展开/折叠
+        function toggleRepair(el) {
+            const detail = el.querySelector('.repair-detail');
+            const arrow = el.querySelector('.repair-arrow');
+            if (detail.style.display === 'none' || !detail.style.display) {
+                detail.style.display = 'block';
+                arrow.textContent = '▲';
+            } else {
+                detail.style.display = 'none';
+                arrow.textContent = '▼';
+            }
+        }
 
-/* ===== 扫码 ===== */
-function openScan(){ document.getElementById('scanOverlay').classList.add('show'); setTimeout(()=>{ closeScan(); addTeamMember('新骑友'+(state.teamMembers.length+1)); },2000); }
-function closeScan(){ document.getElementById('scanOverlay').classList.remove('show'); }
-function addTeamMember(name){ state.teamMembers.push({name, dist:'0km', color:['#3498DB','var(--orange)','#9B59B6'][state.teamMembers.length%3]}); saveState(); toast('扫码成功 · 已添加'+name); renderTab(state.activeTab); }
+        // 装备状态切换（不跳回首页）
+        function cycleEquip(i) {
+            const st = ['ok', 'attention', 'missing'];
+            const idx = st.indexOf(state.equipment[i].s);
+            state.equipment[i].s = st[(idx + 1) % 3];
+            saveState();
+            // 重新渲染当前页面
+            render();
+        }
 
-/* ===== 新手引导 ===== */
-let guideStep = 0;
-const guideSteps = [
-  {icon:'🚴', title:'欢迎来到去野', desc:'专为骑行者打造的出行决策与记录工具。'},
-  {icon:'🗺️', title:'第一步：规划路线', desc:'在"路线规划"中创建或选择路线，查看分段详情和补给点。'},
-  {icon:'🔧', title:'第二步：检查装备', desc:'确认装备状态，待办会自动提醒异常项。'},
-  {icon:'＋', title:'随时出发', desc:'点击底部中间的＋号，选择路线即刻开始骑行。'}
-];
-function showGuide(){ if(localStorage.getItem('guideShown'))return; guideStep=0; renderGuide(); document.getElementById('guideOverlay').classList.add('show'); }
-function renderGuide(){ const g=guideSteps[guideStep]; document.getElementById('guideCard').innerHTML=`<div class="guide-icon">${g.icon}</div><div class="guide-title">${g.title}</div><div class="guide-desc" style="font-size:var(--fs-sm);color:var(--text2);margin-bottom:var(--s6)">${g.desc}</div><div class="guide-step">${guideSteps.map((_,i)=>`<div class="guide-dot${i===guideStep?' active':''}"></div>`).join('')}</div><div class="modal-actions"><button class="btn btn-secondary" onclick="closeGuide()">跳过</button><button class="btn btn-primary" onclick="nextGuide()">${guideStep===guideSteps.length-1?'开始使用':'下一步'}</button></div>`; }
-function nextGuide(){ if(guideStep<guideSteps.length-1){ guideStep++; renderGuide(); } else closeGuide(); }
-function closeGuide(){ document.getElementById('guideOverlay').classList.remove('show'); localStorage.setItem('guideShown','1'); }
+        // 路线选择后触发出发确认
+        function selectAndDepart(name) {
+            state.selectedRoute = name;
+            saveState();
+            goBack();
+            // 直接进入出发确认页
+            setTimeout(() => openSub('确认出发', 'departConfirm'), 100);
+        }
 
-/* ===== 通用工具 ===== */
-function openSubPage(title,key){ state.subPage={title,key}; updateHeader(); renderTab(state.activeTab); }
-function renderSubPage(){ const k=state.subPage.key; if(k==='routes')return renderRoutePlanner(); if(k==='equip')return renderEquipment(); if(k==='todo')return renderTodo(); if(k==='departConfirm')return renderDepartConfirm(); if(k==='weather')return renderWeatherDetail(); if(k==='nearby')return renderNearby(); if(k==='repair')return renderRepairManual(); if(k==='stats')return renderStats(); return `<div class="page-content"><div class="empty-state"><div class="empty-icon">🚧</div><div class="empty-title">${state.subPage.title}</div><div class="empty-desc">功能开发中，敬请期待</div></div></div>`; }
-function toggleEditMode(){ state.editMode=!state.editMode; renderTab(state.activeTab); }
-function removeEditItem(k){ toast('已移除 '+k); }
-function openRecordDetail(name){ openSubPage(name||'轨迹详情','record-detail'); }
-function openModal(id){ document.getElementById(id).classList.add('show'); }
-function closeModal(id){ document.getElementById(id).classList.remove('show'); }
-function confirmSOS(){ closeModal('sosModal'); toast('🚨 求救信号已发送！'); spawnConfetti(); }
-function recordVoice(){ toast('🎤 语音记录中...'); setTimeout(()=>toast('✅ 已保存'),1500); }
-function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2000); }
-function spawnConfetti(){ for(let i=0;i<30;i++){ const p=document.createElement('div'); p.className='confetti-piece'; p.style.left=Math.random()*100+'%'; p.style.top='100%'; p.style.background=['#2ECC71','#F0C040','#E67E22'][i%3]; document.body.appendChild(p); setTimeout(()=>p.remove(),1500); } }
-function renderWeatherDetail(){ return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">🌤️ 天气详情</span><span class="tag tag-g">成都</span></div><div style="text-align:center;padding:var(--s4)"><div style="font-size:var(--fs-2xl);font-weight:800">24°</div><div style="font-size:var(--fs-sm);color:var(--text2)">晴 · 东南风2级</div></div></div></div>`; }
-function renderNearby(){ return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">📍 附近点位</span></div><div class="segmented"><button class="active">修车铺</button><button>便利店</button><button>药店</button></div><div class="check-item"><div>🔧</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">捷安特专卖店</div><div style="font-size:var(--fs-xs);color:var(--text3)">1.2km · 9:00-21:00</div></div></div></div></div>`; }
-function renderRepairManual(){ return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">🔧 骑行维修须知</span><span class="tag tag-g">离线可用</span></div><div class="check-item"><div>🛞</div><div style="flex:1"><div style="font-size:var(--fs-sm);font-weight:600">补胎教程</div><div style="font-size:var(--fs-xs);color:var(--text3)">找到漏气点→打磨→涂胶→贴补片→按压</div></div></div></div></div>`; }
-function renderStats(){ return `<div class="page-content"><div class="card"><div class="card-header"><span class="card-title">📊 骑行数据</span></div><div style="display:flex;justify-content:space-around;padding:var(--s4)"><div style="text-align:center"><div style="font-size:var(--fs-2xl);font-weight:800">320</div><div style="font-size:var(--fs-xs);color:var(--text3)">本月公里</div></div><div style="text-align:center"><div style="font-size:var(--fs-2xl);font-weight:800">12</div><div style="font-size:var(--fs-xs);color:var(--text3)">骑行次数</div></div></div></div></div>`; }
-function renderProfile(){ return `<div class="page-content"><div style="text-align:center;padding:var(--s8) 0"><div style="width:80px;height:80px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto var(--s4)">🚴</div><div style="font-size:var(--fs-xl);font-weight:800">骑行达人</div><div style="display:flex;justify-content:center;gap:var(--s8);margin-top:var(--s4)"><div><div style="font-size:var(--fs-lg);font-weight:800">1,240</div><div style="font-size:var(--fs-xxs);color:var(--text3)">总公里</div></div><div><div style="font-size:var(--fs-lg);font-weight:800">48</div><div style="font-size:var(--fs-xxs);color:var(--text3)">总骑行</div></div></div></div><div class="card"><div class="card-header"><span class="card-title">🌈 我的</span></div><div class="profile-grid">${[{i:'🗺️',l:'轨迹',c:'var(--green-l)',t:'#2ECC71'},{i:'⭐',l:'收藏',c:'rgba(255,204,0,.1)',t:'#FFCC00'},{i:'🏅',l:'勋章',c:'rgba(241,196,15,.1)',t:'#F1C40F'},{i:'🌍',l:'地图',c:'rgba(52,152,219,.1)',t:'#3498DB'}].map(it=>`<div class="grid-item" style="background:${it.c};color:${it.t}" onclick="openSubPage('${it.l}','${it.l}')"><div class="grid-icon">${it.i}</div><div class="grid-label">${it.l}</div></div>`).join('')}</div></div></div>`; }
+        // 出发面板
+        function openDepart() {
+            const selectedText = state.selectedRoute ? `已选: ${state.selectedRoute}` : '';
+            document.getElementById('departPanel').innerHTML = `
+            <div style="width:36px;height:4px;background:rgba(0,0,0,.1);border-radius:4px;margin:0 auto 18px"></div>
+            <div style="text-align:center;margin-bottom:20px"><div style="font-size:18px;font-weight:700">选择出发方式</div></div>
+            <div class="card" style="cursor:pointer;margin-bottom:10px" onclick="triggerDepart('route')">
+              <div class="row"><span style="font-weight:600;font-size:16px">🗺️ 选择路线出发</span><span style="color:var(--text3)">›</span></div>
+              <div style="font-size:13px;color:${state.selectedRoute?'var(--accent)':'var(--text2)'};margin-top:2px">${selectedText||'从路线库中选择已有路线'}</div>
+            </div>
+            <div class="card" style="cursor:pointer" onclick="triggerDepart('free')">
+              <div class="row"><span style="font-weight:600;font-size:16px">🎯 自由记录开始</span><span style="color:var(--text3)">›</span></div>
+              <div style="font-size:13px;color:var(--text2);margin-top:2px">不设路线，纯记录轨迹</div>
+            </div>
+            <button class="btn btn-secondary" style="margin-top:16px" onclick="closeDepart()">取消</button>
+          `;
+            document.getElementById('departOverlay').classList.add('show');
+        }
 
-/* ===== 3D路书回放 ===== */
-function openPlayback(){ document.getElementById('playbackOverlay').classList.add('active'); drawPlayback(); }
-function closePlayback(){ document.getElementById('playbackOverlay').classList.remove('active'); if(state.pbTimer)clearInterval(state.pbTimer); }
-function togglePlayback(){ state.pbRunning=!state.pbRunning; document.getElementById('pbPlayBtn').textContent=state.pbRunning?'⏸':'▶'; if(state.pbRunning){ state.pbTimer=setInterval(()=>{ state.pbPos+=0.2; if(state.pbPos>68)state.pbPos=68; document.getElementById('pbTime').textContent=state.pbPos.toFixed(1)+' km'; drawPlayback(); },50); }else if(state.pbTimer)clearInterval(state.pbTimer); }
-function pbSeek(km){ state.pbPos=Math.max(0,Math.min(68,state.pbPos+km)); document.getElementById('pbTime').textContent=state.pbPos.toFixed(1)+' km'; drawPlayback(); }
-function drawPlayback(){ const c=document.getElementById('playbackCanvas'); if(!c)return; const w=c.parentElement.clientWidth,h=c.parentElement.clientHeight; c.width=w*2;c.height=h*2; const ctx=c.getContext('2d'); ctx.scale(2,2); ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,w,h); ctx.strokeStyle='rgba(255,255,255,.3)'; ctx.lineWidth=2; ctx.beginPath(); for(let i=0;i<=w;i++){ const x=i; const y=h*.6+Math.sin(i/w*Math.PI*2)*30; if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke(); const px=state.pbPos/68*w; const py=h*.6+Math.sin(px/w*Math.PI*2)*30; ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.fillStyle='#2ECC71'; ctx.fill(); }
+        function closeDepart() { document.getElementById('departOverlay').classList.remove('show'); }
 
-/* ===== 初始化 ===== */
-window.addEventListener('load', ()=>{
-  updateHeader();
-  renderTab(state.activeTab);
-  if(!localStorage.getItem('guideShown')) setTimeout(showGuide, 500);
-});
-</script>
+        function triggerDepart(type) {
+            closeDepart();
+            if (type === 'free') {
+                state.selectedRoute = null;
+                saveState();
+                openSub('确认出发', 'departConfirm');
+            } else if (state.selectedRoute) {
+                openSub('确认出发', 'departConfirm');
+            } else {
+                toast('请先在首页选择一条路线');
+                // 滚动到路线区域
+                document.querySelector('.section-title')?.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // 开始骑行
+        function startRide() {
+            state.rideActive = true;
+            state.ridePaused = false;
+            state.rideEnding = false;
+            state.rideData = { speed: 25.3, dist: 0, time: 0, elev: 412 };
+            document.getElementById('rideFull').classList.add('active');
+            document.getElementById('rideTitle').textContent = state.selectedRoute ? `骑行中 · ${state.selectedRoute}` : '骑行中 · 自由骑行';
+            document.getElementById('ridePauseBtn').textContent = '⏸';
+            updateRideUI();
+            if (state.rideTimer) clearInterval(state.rideTimer);
+            state.rideTimer = setInterval(() => {
+                if (!state.ridePaused) {
+                    state.rideData.time += 1;
+                    state.rideData.dist += .007;
+                    state.rideData.speed = 25 + Math.sin(state.rideData.time / 60) * 3 + (Math.random() - .5) * 2;
+                    updateRideUI();
+                }
+            }, 1000);
+        }
+
+        function endRide() {
+            if (state.rideEnding) return;
+            state.rideEnding = true;
+            state.rideActive = false;
+            clearInterval(state.rideTimer);
+            document.getElementById('rideFull').classList.remove('active');
+            const d = state.rideData;
+            const m = Math.floor(d.time / 60),
+                s = d.time % 60;
+            const newRecord = {
+                n: state.selectedRoute || '自由骑行',
+                d: '今天',
+                s: d.dist.toFixed(1) + 'km',
+                t: m + '分' + s + '秒',
+                c: d.elev + 'm',
+                v: d.speed.toFixed(1)
+            };
+            state.records.unshift(newRecord);
+            state.totalKm += Math.round(d.dist);
+            state.totalRides += 1;
+            state.selectedRoute = null;
+            saveState();
+
+            // 弹出总结弹窗
+            document.getElementById('rideSummaryPanel').innerHTML = `
+            <div style="text-align:center;padding:16px 0">
+              <div style="font-size:48px;margin-bottom:12px">🚴</div>
+              <div style="font-size:22px;font-weight:700;margin-bottom:16px">骑行结束</div>
+              <div style="display:flex;justify-content:space-around;margin-bottom:20px">
+                <div><div style="font-size:28px;font-weight:700;color:var(--accent)">${newRecord.s}</div><div style="font-size:11px;color:var(--text3)">距离</div></div>
+                <div><div style="font-size:28px;font-weight:700;color:var(--accent)">${newRecord.t}</div><div style="font-size:11px;color:var(--text3)">用时</div></div>
+                <div><div style="font-size:28px;font-weight:700;color:var(--accent)">${newRecord.v}</div><div style="font-size:11px;color:var(--text3)">均速km/h</div></div>
+              </div>
+              <button class="btn btn-primary" onclick="closeRideSummary()">完成</button>
+            </div>
+          `;
+            document.getElementById('rideSummaryOverlay').classList.add('show');
+        }
+
+        function closeRideSummary() {
+            document.getElementById('rideSummaryOverlay').classList.remove('show');
+            switchTab(1);
+        }
+
+        function togglePause() { state.ridePaused = !state.ridePaused;
+            document.getElementById('ridePauseBtn').textContent = state.ridePaused ? '▶' : '⏸'; }
+
+        function updateRideUI() {
+            document.getElementById('rideSpeed').textContent = state.rideData.speed.toFixed(1);
+            document.getElementById('rideDist').textContent = state.rideData.dist.toFixed(1);
+            const m = Math.floor(state.rideData.time / 60),
+                s = state.rideData.time % 60;
+            document.getElementById('rideTime').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2,
+                '0');
+            document.getElementById('rideElev').textContent = state.rideData.elev;
+        }
+
+        // 创建路线面板
+        function openCreateRoute() {
+            document.getElementById('createRoutePanel').innerHTML = `
+            <div style="width:36px;height:4px;background:rgba(0,0,0,.1);border-radius:4px;margin:0 auto 18px"></div>
+            <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">新建路线</div></div>
+            <div class="card" style="cursor:pointer;margin-bottom:10px" onclick="toast('地图打点创建路线');closeCreateRoute()"><div class="row"><span style="font-weight:600;font-size:16px">🗺️ 地图打点</span></div><div style="font-size:13px;color:var(--text2);margin-top:2px">长按地图添加途经点，拖拽调整顺序</div></div>
+            <div class="card" style="cursor:pointer;margin-bottom:10px" onclick="toast('选择GPX文件导入');closeCreateRoute()"><div class="row"><span style="font-weight:600;font-size:16px">📁 导入GPX</span></div><div style="font-size:13px;color:var(--text2);margin-top:2px">从本地文件或链接导入</div></div>
+            <div class="card" style="cursor:pointer" onclick="toast('从历史记录创建路线');closeCreateRoute()"><div class="row"><span style="font-weight:600;font-size:16px">📝 从历史创建</span></div><div style="font-size:13px;color:var(--text2);margin-top:2px">选择一条骑行记录转为路线</div></div>
+            <button class="btn btn-secondary" style="margin-top:16px" onclick="closeCreateRoute()">取消</button>
+          `;
+            document.getElementById('createRouteOverlay').classList.add('show');
+        }
+
+        function closeCreateRoute() { document.getElementById('createRouteOverlay').classList.remove('show'); }
+
+        // 添加装备面板
+        function openAddEquip() {
+            document.getElementById('addEquipPanel').innerHTML = `
+            <div style="width:36px;height:4px;background:rgba(0,0,0,.1);border-radius:4px;margin:0 auto 18px"></div>
+            <div style="text-align:center;margin-bottom:16px"><div style="font-size:18px;font-weight:700">添加装备</div></div>
+            <div style="margin-bottom:12px"><input id="equipName" placeholder="装备名称" style="width:100%;padding:14px;border-radius:12px;border:1px solid rgba(0,0,0,.1);font-size:15px;font-family:inherit;outline:none"></div>
+            <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">${['⛑️','🧤','🫗','🛞','🔧','🍬','🧥','🩹','🔋','🕶️','🧴'].map(i=>`<span style="font-size:24px;cursor:pointer;padding:8px;border-radius:8px;background:var(--surface)" onclick="document.getElementById('equipName').value=document.getElementById('equipName').value+'${i}'">${i}</span>`).join('')}</div>
+            <button class="btn btn-primary" onclick="addEquip()">添加</button>
+            <button class="btn btn-secondary" style="margin-top:8px" onclick="closeAddEquip()">取消</button>
+          `;
+            document.getElementById('addEquipOverlay').classList.add('show');
+        }
+
+        function closeAddEquip() { document.getElementById('addEquipOverlay').classList.remove('show'); }
+
+        function addEquip() {
+            const name = document.getElementById('equipName').value.trim();
+            if (!name) return;
+            const icon = [...name].find(c => c.match(/\p{Emoji}/u)) || '🔧';
+            state.equipment.push({ n: name, i: icon, s: 'ok' });
+            saveState();
+            closeAddEquip();
+            // 如果在装备清单子页面，重新渲染；否则回到首页
+            if (state.subPage && state.subPage.key === 'equip') render();
+            else { goBack();
+                switchTab(0); }
+            toast('已添加: ' + name);
+        }
+
+        function toast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2000);
+        }
+
+        // 初始化
+        document.querySelectorAll('.nav-item').forEach(el => el.addEventListener('click', function() { switchTab(
+                parseInt(this.dataset.tab)); }));
+        updateHeader();
+        render();
+    </script>
 </body>
 </html>
