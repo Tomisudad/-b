@@ -5,6 +5,7 @@ import 'package:gowild_app/painters/nav_map_painter.dart';
 import 'package:gowild_app/providers/app_state.dart';
 import 'package:gowild_app/screens/ride_summary.dart';
 import 'package:provider/provider.dart';
+import '../models/ride_record.dart';
 
 class RideNavPage extends StatefulWidget {
   const RideNavPage({super.key});

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../config/theme.dart';
+import '../models/equipment.dart';
 
 /// 装备清单页 — 严格对照 HTML renderSub() equip + cycleEquip() + openAddEquip()
 class EquipmentPage extends StatefulWidget {

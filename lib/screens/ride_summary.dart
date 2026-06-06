@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gowild_app/providers/app_state.dart';
 import 'package:provider/provider.dart';
+import '../models/ride_record.dart';
 
 void showRideSummaryModal(BuildContext context, {required RideRecord record}) {
   showModalBottomSheet(

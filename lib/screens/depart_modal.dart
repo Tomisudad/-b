@@ -241,6 +241,21 @@ void showDepartConfirm(BuildContext context) {
 }
 
 class _DepartConfirmSheet extends StatelessWidget {
+  Widget _dragHandle() => Center(
+    child: Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))),
+  );
+
+  Widget _cancelButton(BuildContext context, String label) {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: () => Navigator.pop(context),
+        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+        child: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(

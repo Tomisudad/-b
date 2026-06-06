@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../config/theme.dart';
+import '../models/route_model.dart';
 
 /// 路线详情页 — 严格对照 HTML renderSub() route-detail
 class RouteDetailPage extends StatelessWidget {

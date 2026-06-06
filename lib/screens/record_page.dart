@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gowild_app/providers/app_state.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
+import '../models/ride_record.dart';
 
 /// 记录页 — 严格对照 HTML renderRecord()
 class RecordPage extends StatelessWidget {

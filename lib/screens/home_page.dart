@@ -26,8 +26,8 @@ class _HomePageState extends State<HomePage> {
       GlobalKey<SliderDepartState>();
 
   @override
-  void didUpdateWidget(HomePage oldWidget, BuildContext context) {
-    super.didUpdateWidget(oldWidget, context);
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
     // 从子页面返回时重置滑块
     _sliderKey.currentState?.reset();
   }
